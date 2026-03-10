@@ -1958,6 +1958,17 @@ public class MainActivity extends AppCompatActivity {
         graphView.getViewport().setMinY(0);
         graphView.getViewport().setMaxY(graphMaxHR);
         graphView.getGridLabelRenderer().setNumVerticalLabels(5); // 5 is the magic number that works reliably...
+        graphView.getGridLabelRenderer().setNumHorizontalLabels(4);
+        graphView.getGridLabelRenderer().setHorizontalLabelsColor(getResources().getColor(R.color.colorText));
+        graphView.getGridLabelRenderer().setVerticalLabelsColor(getResources().getColor(R.color.colorText));
+        graphView.getGridLabelRenderer().setGridColor(getResources().getColor(R.color.colorTextUndefinedData));
+        graphView.getGridLabelRenderer().setTextSize(26f);
+        graphView.getGridLabelRenderer().setVerticalAxisTitle("HR / Alpha1 / RMSSD");
+        graphView.getGridLabelRenderer().setVerticalAxisTitleTextSize(28f);
+        graphView.getGridLabelRenderer().setVerticalAxisTitleColor(getResources().getColor(R.color.colorText));
+        graphView.getSecondScale().setVerticalAxisTitle("Artifacts %");
+        graphView.getSecondScale().setVerticalAxisTitleTextSize(26f);
+        graphView.getSecondScale().setVerticalAxisTitleColor(getResources().getColor(R.color.colorBlue));
         //
         graphView.addSeries(a125Series);
         graphView.addSeries(a1125Series);
