@@ -8,10 +8,30 @@
         <item name="android:statusBarColor">@color/colorPrimaryDark</item>
         <item name="android:navigationBarColor">@color/colorBackground</item>
         <item name="materialCardViewStyle">@style/Widget.FatMaxxer.Card</item>
+        <item name="toolbarStyle">@style/Widget.FatMaxxer.Toolbar</item>
     </style>
 
     <style name="Widget.FatMaxxer.Card" parent="Widget.MaterialComponents.CardView">
         <item name="cardCornerRadius">20dp</item>
+    </style>
+
+    <style name="Widget.FatMaxxer.Toolbar" parent="Widget.MaterialComponents.Toolbar">
+        <item name="android:minHeight">60dp</item>
+        <item name="titleTextColor">@color/colorText</item>
+        <item name="subtitleTextColor">@color/colorText</item>
+    </style>
+
+    <style name="TextAppearance.FatMaxxer.Label" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.FatMaxxer.MetricPrimary" parent="TextAppearance.MaterialComponents.Headline4">
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.FatMaxxer.MetricSecondary" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:textStyle">bold</item>
     </style>
 
 </resources>
