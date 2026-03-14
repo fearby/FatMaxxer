@@ -1,24 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#1B6B4A</color>
-    <color name="colorPrimaryDark">#145239</color>
-    <color name="colorAccent">#4E6B5C</color>
-    <color name="colorHRVvt1">#FFFF00</color>
-    <color name="colorHRVvt2">#FF0000</color>
-    <color name="colorBackground">#000000</color>
-    <color name="colorHighlight">#FF6600</color>
-    <color name="colorTextData">#FFFFFF</color>
-    <color name="colorTextUndefinedData">#888888</color>
-    <color name="colorTextUnreliableData">#FFFF00</color>
-    <color name="colorMaxIntensity">#FF0000</color>
-    <color name="colorMedIntensity">#FFFF00</color>
-    <color name="colorFatMaxIntensity">#00FF00</color>
-    <color name="colorEasyIntensity">#0000FF</color>
-    <color name="rmssdSeries">#00FFFF</color>
-    <color name="hrWinSeries">#FF8800</color>
-    <color name="peakECGSeries">#FF00FF</color>
-    <color name="zone_fat_burning">#A8F2C8</color>
-    <color name="zone_aerobic">#FFF0A0</color>
-    <color name="zone_anaerobic">#FFCDD2</color>
-    <color name="zone_waiting">#DBE5DC</color>
+    <!-- Brand -->
+    <color name="colorPrimary">#0D1F16</color>
+    <color name="colorPrimaryDark">#070F0B</color>
+    <color name="colorAccent">#00E676</color>
+    <color name="colorSurface">#111C15</color>
+    <color name="colorOnSurface">#E8F5E9</color>
+
+    <!-- Legacy compat -->
+    <color name="colorHRVvt1">#FFD600</color>
+    <color name="colorHRVvt2">#FF1744</color>
+    <color name="colorBackground">#07110A</color>
+    <color name="colorHighlight">#FF6D00</color>
+    <color name="colorTextData">#E8F5E9</color>
+    <color name="colorTextUndefinedData">#546E7A</color>
+    <color name="colorTextUnreliableData">#FFD600</color>
+    <color name="colorMaxIntensity">#FF1744</color>
+    <color name="colorMedIntensity">#FF6D00</color>
+    <color name="colorFatMaxIntensity">#00E676</color>
+    <color name="colorEasyIntensity">#1565C0</color>
+    <color name="rmssdSeries">#00E5FF</color>
+    <color name="hrWinSeries">#FF6D00</color>
+    <color name="peakECGSeries">#D500F9</color>
+
+    <!-- Zones -->
+    <color name="zone_fat_burning">#003300</color>
+    <color name="zone_aerobic">#332200</color>
+    <color name="zone_anaerobic">#330000</color>
+    <color name="zone_waiting">#0A1A0E</color>
+
+    <!-- Card backgrounds -->
+    <color name="card_bg">#111C15</color>
+    <color name="card_bg_elevated">#162219</color>
 </resources>

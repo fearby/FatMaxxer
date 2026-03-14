@@ -1821,6 +1821,18 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(binding.toolbar);
         setContentView(binding.getRoot());
         chartHelper = new ChartHelper(this, binding.lineChart);
+        if (binding.fabConnect != null) {
+            binding.fabConnect.setOnClickListener(v -> {
+                if (SENSOR_ID != null && SENSOR_ID.length() > 0) {
+                    try { api.disconnectFromDevice(SENSOR_ID); } catch (Exception e) { /* ignore */ }
+                    SENSOR_ID = "";
+                    binding.chipConnectionStatus.setText("Disconnected");
+                } else {
+                    searchForPolarDevices();
+                    tryPolarConnectToPreferredDevice();
+                }
+            });
+        }
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -1920,6 +1932,7 @@ public class MainActivity extends AppCompatActivity {
                 quitSearchForPolarDevices();
                 SENSOR_ID = polarDeviceInfo.getDeviceId();
                 Log.d(TAG, "Polar device CONNECTED: " + polarDeviceInfo.getDeviceId());
+                if (binding != null) { binding.chipConnectionStatus.setText("Connected: " + SENSOR_ID); binding.chipConnectionStatus.setChipBackgroundColorResource(R.color.colorFatMaxIntensity); }
                 Toast.makeText(getBaseContext(), getString(R.string.ConnectedToDevice)+" " + SENSOR_ID, Toast.LENGTH_SHORT).show();
                 ensurePreferenceSet(POLAR_DEVICE_ID_PREFERENCE_STRING,polarDeviceInfo.getDeviceId());
             }
@@ -1933,6 +1946,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void deviceDisconnected(@NonNull PolarDeviceInfo polarDeviceInfo) {
                 Log.d(TAG, "DISCONNECTED: " + polarDeviceInfo.getDeviceId());
+                if (binding != null) { binding.chipConnectionStatus.setText("Disconnected"); binding.chipConnectionStatus.setChipBackgroundColorResource(android.R.color.transparent); }
                 if (text_view != null) text_view.setText(getString(R.string.DisconnectedFromHeartRateSensor)+" " + polarDeviceInfo.getDeviceId());
                 ecgDisposable = null;
 //                accDisposable = null;
@@ -2491,7 +2505,7 @@ public class MainActivity extends AppCompatActivity {
             String logstring = logmsg.toString();
 
             artifactsPercentWindowed = (int) round(nrArtifacts * 100 / (double) (nrArtifacts + nrSamples));
-            text_artifacts.setText("" + nrArtifacts + "/" + (nrArtifacts+nrSamples) + " (" + artifactsPercentWindowed + "%) [" + artifactCorrectionThreshold + "]");
+            if (text_artifacts != null) text_artifacts.setText("" + artifactsPercentWindowed);
             if (haveArtifacts) {
                 text_artifacts.setBackgroundResource(R.color.colorHighlight);
             } else {

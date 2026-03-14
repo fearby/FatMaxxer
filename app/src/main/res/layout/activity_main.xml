@@ -3,31 +3,40 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimaryDark"
+        app:elevation="0dp"
+        android:fitsSystemWindows="true">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="FatMaxxer" />
+            app:title="FatMaxxer"
+            app:titleTextColor="#00E676"
+            app:subtitleTextColor="#80E8F5E9"
+            android:background="@color/colorPrimaryDark" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingHorizontal="16dp"
-            android:paddingBottom="8dp">
+            android:paddingBottom="10dp"
+            android:paddingTop="2dp">
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipConnectionStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Disconnected"
+                android:textColor="#80E8F5E9"
                 style="@style/Widget.Material3.Chip.Assist" />
 
             <View
@@ -39,7 +48,8 @@
                 android:id="@+id/chipElapsedTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="00:00"
+                android:text="00:00:00"
+                android:textColor="#80E8F5E9"
                 style="@style/Widget.Material3.Chip.Assist" />
 
         </LinearLayout>
@@ -49,187 +59,246 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="12dp"
+        android:padding="16dp"
+        android:background="@color/colorBackground"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+        <!-- α1 Hero Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardAlpha1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp">
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/zone_waiting"
+            app:strokeWidth="1dp"
+            app:strokeColor="#1A00E676">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:paddingVertical="20dp"
-                android:paddingHorizontal="16dp">
+                android:paddingVertical="24dp"
+                android:paddingHorizontal="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="DFA α1"
-                    android:textAppearance="?attr/textAppearanceTitleMedium" />
+                    android:textSize="13sp"
+                    android:letterSpacing="0.15"
+                    android:textColor="#80E8F5E9"
+                    android:textAllCaps="true" />
 
                 <TextView
                     android:id="@+id/textAlpha1Value"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="--"
-                    android:textSize="72sp"
-                    android:textStyle="bold" />
+                    android:textSize="80sp"
+                    android:textStyle="bold"
+                    android:textColor="#00E676"
+                    android:fontFamily="sans-serif-light"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="8dp" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipZoneLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Waiting for data"
+                    android:textColor="#B0E8F5E9"
                     style="@style/Widget.Material3.Chip.Assist" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Stats Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="14dp">
 
+            <!-- HR -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardHR"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="6dp"
-                app:cardCornerRadius="12dp">
+                android:layout_marginEnd="7dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/card_bg"
+                app:strokeWidth="1dp"
+                app:strokeColor="#1AFFFFFF">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:padding="12dp">
+                    android:paddingVertical="16dp"
+                    android:paddingHorizontal="8dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="HR"
-                        android:textAppearance="?attr/textAppearanceLabelSmall" />
+                        android:textSize="11sp"
+                        android:letterSpacing="0.1"
+                        android:textColor="#60E8F5E9"
+                        android:textAllCaps="true" />
 
                     <TextView
                         android:id="@+id/textHeartRate"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="?attr/textAppearanceHeadlineMedium" />
+                        android:textSize="36sp"
+                        android:textStyle="bold"
+                        android:textColor="#FF6D00"
+                        android:fontFamily="sans-serif-light" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="BPM"
-                        android:textAppearance="?attr/textAppearanceLabelSmall" />
+                        android:text="bpm"
+                        android:textSize="11sp"
+                        android:textColor="#40E8F5E9" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- RMSSD -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardRMSSD"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginHorizontal="6dp"
-                app:cardCornerRadius="12dp">
+                android:layout_marginHorizontal="7dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/card_bg"
+                app:strokeWidth="1dp"
+                app:strokeColor="#1AFFFFFF">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:padding="12dp">
+                    android:paddingVertical="16dp"
+                    android:paddingHorizontal="8dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RMSSD"
-                        android:textAppearance="?attr/textAppearanceLabelSmall" />
+                        android:textSize="11sp"
+                        android:letterSpacing="0.1"
+                        android:textColor="#60E8F5E9"
+                        android:textAllCaps="true" />
 
                     <TextView
                         android:id="@+id/textRMSSD"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="?attr/textAppearanceHeadlineMedium" />
+                        android:textSize="36sp"
+                        android:textStyle="bold"
+                        android:textColor="#00E5FF"
+                        android:fontFamily="sans-serif-light" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="ms"
-                        android:textAppearance="?attr/textAppearanceLabelSmall" />
+                        android:textSize="11sp"
+                        android:textColor="#40E8F5E9" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Artifacts -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardArtifacts"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                app:cardCornerRadius="12dp">
+                android:layout_marginStart="7dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/card_bg"
+                app:strokeWidth="1dp"
+                app:strokeColor="#1AFFFFFF">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:padding="12dp">
+                    android:paddingVertical="16dp"
+                    android:paddingHorizontal="8dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Artifacts"
-                        android:textAppearance="?attr/textAppearanceLabelSmall" />
+                        android:text="Noise"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.1"
+                        android:textColor="#60E8F5E9"
+                        android:textAllCaps="true" />
 
                     <TextView
                         android:id="@+id/textArtifacts"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textAppearance="?attr/textAppearanceHeadlineMedium" />
+                        android:textSize="36sp"
+                        android:textStyle="bold"
+                        android:textColor="#D500F9"
+                        android:fontFamily="sans-serif-light" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="%"
-                        android:textAppearance="?attr/textAppearanceLabelSmall" />
+                        android:textSize="11sp"
+                        android:textColor="#40E8F5E9" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
 
+        <!-- Chart -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:minHeight="220dp"
-            app:cardCornerRadius="12dp">
+            android:minHeight="200dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/card_bg"
+            app:strokeWidth="1dp"
+            app:strokeColor="#1AFFFFFF">
 
             <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/lineChart"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="8dp" />
+                android:padding="4dp" />
 
         </com.google.android.material.card.MaterialCardView>
 
         <FrameLayout
             android:id="@+id/settings_container"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
 
     </LinearLayout>
 
@@ -237,7 +306,8 @@
         android:id="@+id/bottomAppBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom" />
+        android:layout_gravity="bottom"
+        android:backgroundTint="@color/colorPrimaryDark" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabConnect"
@@ -245,6 +315,8 @@
         android:layout_height="wrap_content"
         android:contentDescription="Connect"
         android:src="@android:drawable/ic_menu_add"
+        app:backgroundTint="#00E676"
+        app:tint="@color/colorPrimaryDark"
         app:layout_anchor="@id/bottomAppBar" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
