@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    file_paths.xml — FatMaxxer (fearby fork)
+
+    Required by FileProvider to securely share log files via the
+    Android ShareSheet on Android 10+ (API 29+).
+
+    Place this file at:
+      app/src/main/res/xml/file_paths.xml
+
+    The paths defined here must match wherever logs are written in
+    LogExportHelper.java (i.e. getExternalFilesDir() or getCacheDir()).
+-->
+<paths>
+    <!--
+        External files dir: /Android/data/online.fatmaxxer.fatmaxxer/files/
+        This is the app's private external storage — no WRITE_EXTERNAL_STORAGE
+        permission needed on Android 10+, and it survives app reinstalls.
+        Use this for rr.log, artifacts.log, features.csv, debug.log
+    -->
+    <external-files-path
+        name="fatmaxxer_logs"
+        path="logs/" />
+
+    <!--
+        Cache dir: for temporary export copies before sharing
+    -->
+    <cache-path
+        name="fatmaxxer_cache"
+        path="export/" />
+</paths>

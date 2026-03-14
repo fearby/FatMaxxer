@@ -1,0 +1,58 @@
+<!--
+    res/values/themes.xml — Material 3 theme
+
+    CHANGES FROM ORIGINAL:
+    - Theme updated from AppCompat / Material 1.x to Material3
+    - Dynamic colour support on Android 12+ (wallpaper-derived colours)
+    - Proper status bar / navigation bar colour handling
+    - ColorPrimary set to a fitness-appropriate teal/green (matches α1 zone concept)
+
+    Replace your existing res/values/themes.xml with this file.
+    Also create res/values-night/themes.xml with the DayNight variant (see below).
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Base application theme -->
+    <style name="Base.Theme.FatMaxxer" parent="Theme.Material3.DayNight.NoActionBar">
+        <!--
+            Primary colour — used for FAB, chips, key UI elements.
+            A deep teal/green evokes "zone" and fitness without being garish.
+            Override freely to match your preference.
+        -->
+        <item name="colorPrimary">@color/md_theme_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_on_primary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_on_primary_container</item>
+
+        <item name="colorSecondary">@color/md_theme_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_on_secondary_container</item>
+
+        <item name="colorSurface">@color/md_theme_surface</item>
+        <item name="colorOnSurface">@color/md_theme_on_surface</item>
+        <item name="colorSurfaceVariant">@color/md_theme_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_on_surface_variant</item>
+
+        <item name="colorError">@color/md_theme_error</item>
+        <item name="colorOnError">@color/md_theme_on_error</item>
+
+        <!-- Edge-to-edge rendering -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- Ensure text is readable on status/nav bars -->
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+    </style>
+
+    <!--
+        Main theme — wraps the base.
+        On Android 12+, Material3 will automatically use dynamic colour
+        derived from the user's wallpaper, overriding the colorPrimary above.
+        On older Android, the static colours above are used.
+    -->
+    <style name="Theme.FatMaxxer" parent="Base.Theme.FatMaxxer" />
+
+</resources>

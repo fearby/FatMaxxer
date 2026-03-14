@@ -5,8 +5,7 @@
      to decide the location so "neverForLocation" permission flag can be used.-->
     <uses-permission
         android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation"
-        />
+        android:usesPermissionFlags="neverForLocation" />
 
     <!-- Polar SDK needs Bluetooth connect permission to connect for found BLE devices.-->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
@@ -36,9 +35,20 @@
     <uses-permission
         android:name="android.permission.ACCESS_COARSE_LOCATION"
         android:maxSdkVersion="30" />
+
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- ADDED: required for Android 14+ foreground services using Bluetooth -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- ADDED: legacy storage for Android 9 and below only -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <application
         android:hardwareAccelerated="true"
@@ -47,7 +57,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/Theme.FatMaxxer">
+
         <activity
             android:name="online.fatmaxxer.publicRelease1.MainActivity"
             android:configChanges="orientation"
@@ -76,32 +87,34 @@
                 <action android:name="android.intent.action.REPLAY" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Accepts URIs that begin with "http://www.example.com/gizmos” -->
                 <data android:scheme="http"
                     android:host="online.fatmaxxer"
                     android:pathPrefix="/replay" />
-                <!-- note that the leading "/" is required for pathPrefix-->
             </intent-filter>
             <intent-filter android:label="FatMaxxerReplayCustomURI">
                 <action android:name="android.intent.action.REPLAY" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Accepts URIs that begin with "example://gizmos” -->
                 <data android:scheme="fatmaxxer"
                     android:host="replay" />
             </intent-filter>
         </activity>
-        <service android:name="online.fatmaxxer.publicRelease1.MainActivity$LocalService"/>
-        <service android:name="online.fatmaxxer.publicRelease1.BLEEmulator"/>
+
+        <service android:name="online.fatmaxxer.publicRelease1.MainActivity$LocalService" />
+        <service android:name="online.fatmaxxer.publicRelease1.BLEEmulator" />
+
+        <!-- FileProvider for sharing log files on Android 7+ -->
+        <!-- CHANGED: resource updated to @xml/file_paths (matches new file_paths.xml) -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="online.fatmaxxer.publicRelease1.fileprovider"
+            android:authorities="${applicationId}.fileprovider"
             android:grantUriPermissions="true"
             android:exported="false">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/filepaths" />
+                android:resource="@xml/file_paths" />
         </provider>
+
     </application>
 
 </manifest>

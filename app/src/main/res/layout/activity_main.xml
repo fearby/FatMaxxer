@@ -1,204 +1,399 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    res/layout/activity_main.xml — modernised with Material 3 components
 
+    CHANGES FROM ORIGINAL:
+    - Root layout changed to CoordinatorLayout (enables proper AppBar scroll behaviour)
+    - AppBar added with MaterialToolbar (replaces old action bar / status line)
+    - Status card uses MaterialCardView for elevation and rounded corners
+    - Key metric (α1) given a large prominent display with colour-coded background
+    - Heart rate / RMSSD / artifacts displayed in a clean 3-column row
+    - Elapsed time shown as a chip in the toolbar area
+    - MPAndroidChart LineChart replaces the old GraphView widget
+    - BottomAppBar houses controls (connect, settings, export) — keeps the chart area clean
+    - FloatingActionButton for the primary action (connect/disconnect)
+    - All colours reference Material 3 theme attributes (dynamic colour on Android 12+)
+    - ConstraintLayout used for the stats row to keep it responsive across screen sizes
 
+    IMPORTANT: Replace your entire res/layout/activity_main.xml with this file.
+    You will need to update MainActivity.java to use ViewBinding and reference the
+    new view IDs (listed at the bottom of this file for reference).
+-->
 
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="online.fatmaxxer.publicRelease1.MainActivity"
-    android:id="@+id/application_container"
-    >
+    android:background="?attr/colorSurface"
+    tools:context=".MainActivity">
 
-    <LinearLayout
+    <!-- ================================================================ -->
+    <!-- TOP APP BAR                                                       -->
+    <!-- ================================================================ -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:liftOnScroll="false">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="FatMaxxer"
+            app:navigationIcon="@drawable/ic_heart_rate"
+            app:menu="@menu/main_menu" />
+
+        <!-- Connection status + elapsed time strip -->
+        <LinearLayout
+            android:id="@+id/statusStrip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="8dp"
+            android:gravity="center_vertical">
+
+            <!-- BLE connection status indicator -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipConnectionStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Disconnected"
+                app:chipIconTint="@color/material_dynamic_neutral50"
+                app:chipIcon="@drawable/ic_bluetooth"
+                style="@style/Widget.Material3.Chip.Assist" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Elapsed time -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipElapsedTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00"
+                style="@style/Widget.Material3.Chip.Assist" />
+
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- ================================================================ -->
+    <!-- MAIN CONTENT — scrollable column                                  -->
+    <!-- ================================================================ -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:padding="12dp">
 
-            <TextView
-                android:paddingLeft="0dp"
-                android:paddingRight="0dp"
-                android:id="@+id/modeView"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginRight="-10dp"
-                android:text="@string/Light"
-                android:fontFamily="sans-serif"
-                android:textColor="@color/colorText"
-                android:textAlignment="center"
-                android:gravity="center_vertical"
-                android:textSize="18sp"
-                android:layout_weight="1"
-                />
-
-            <TextView
-                android:paddingLeft="0dp"
-                android:paddingRight="0dp"
-                android:id="@+id/timeView"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:fontFamily="sans-serif"
-                android:gravity="center_vertical"
-                android:text="@string/undefinedTimeString"
-                android:textAlignment="center"
-                android:textColor="@color/colorText"
-                android:textSize="32sp" />
-
-            <TextView
-                android:paddingLeft="0dp"
-                android:paddingRight="0dp"
-                android:layout_marginLeft="-10dp"
-                android:id="@+id/battView"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:text="----"
-                android:fontFamily="sans-serif"
-                android:textColor="@color/colorText"
-                android:textAlignment="center"
-                android:gravity="center_vertical"
-                android:textSize="18sp"
-                android:layout_weight="1"
-                />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/hrLabel"
-                android:layout_marginBottom="-4dp"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:fontFamily="sans-serif"
-                android:text="@string/HeartRateAbbrev"
-                android:textColor="@color/colorRed"
-                android:textAlignment="center"
-                android:layout_weight="1"
-                android:gravity="center_vertical"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/a1Label"
-                android:layout_width="0dp"
+            <!-- -------------------------------------------------------- -->
+            <!-- HERO CARD: α1 value — the most important metric          -->
+            <!-- -------------------------------------------------------- -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAlpha1"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif"
-                android:gravity="center_vertical"
-                android:textAlignment="center"
-                android:text="⍺1"
-                android:textColor="@color/colorA1V2"
-                android:textColorHighlight="@color/colorA1V2"
-                android:layout_weight="1"
-                android:textSize="12sp" />
+                android:layout_marginBottom="12dp"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="16dp"
+                app:cardBackgroundColor="?attr/colorSecondaryContainer">
 
-            <TextView
-                android:id="@+id/hrvLabel"
-                android:layout_marginBottom="-4dp"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:fontFamily="sans-serif"
-                android:gravity="center_vertical"
-                android:textAlignment="center"
-                android:layout_weight="1"
-                android:textSize="12sp"
-                android:textColor="@color/colorText"
-                android:text="@string/RootMeanSquareSuccessiveDifferencesAbbrev"
-                />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:paddingVertical="20dp"
+                    android:paddingHorizontal="16dp">
 
-        </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DFA α1"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        android:letterSpacing="0.05" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal">
+                    <!-- The big α1 number — update this from code -->
+                    <TextView
+                        android:id="@+id/textAlpha1Value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="72sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        android:lineSpacingMultiplier="0.9"
+                        tools:text="0.82" />
 
-            <TextView
-                android:id="@+id/hrTextView"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif"
-                android:gravity="center_horizontal"
-                android:text="---"
-                android:textAlignment="center"
-                android:textColor="@color/colorText"
-                android:textSize="48sp" />
+                    <!-- Zone label: below VT1 / at VT1 / above VT2 etc. -->
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipZoneLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Waiting for data…"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        app:chipBackgroundColor="?attr/colorSecondary"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        tools:text="Below VT1 — Fat burning zone" />
 
-            <TextView
-                android:id="@+id/a1TextView"
-                android:layout_width="0dp"
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- -------------------------------------------------------- -->
+            <!-- STATS ROW: HR · RMSSD · Artifacts                        -->
+            <!-- -------------------------------------------------------- -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif"
-                android:gravity="center_horizontal"
-                android:textAlignment="center"
-                android:text="---"
-                android:textColor="@color/colorText"
-                android:layout_weight="1"
-                android:textSize="56sp" />
+                android:layout_marginBottom="12dp">
 
-            <TextView
-                android:id="@+id/hrvTextView"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:fontFamily="sans-serif"
-                android:gravity="center_horizontal"
-                android:textAlignment="center"
+                <!-- Heart Rate -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardHR"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/cardRMSSD"
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:layout_marginEnd="6dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="HR"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:id="@+id/textHeartRate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="—"
+                            android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                            android:textColor="?attr/colorOnSurface"
+                            tools:text="142" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="BPM"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- RMSSD -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardRMSSD"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:layout_constraintStart_toEndOf="@id/cardHR"
+                    app:layout_constraintEnd_toStartOf="@id/cardArtifacts"
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:layout_marginHorizontal="6dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="RMSSD"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:id="@+id/textRMSSD"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="—"
+                            android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                            android:textColor="?attr/colorOnSurface"
+                            tools:text="28" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="ms"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Artifacts -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardArtifacts"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:layout_constraintStart_toEndOf="@id/cardRMSSD"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:layout_marginStart="6dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Artifacts"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:id="@+id/textArtifacts"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="—"
+                            android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                            android:textColor="?attr/colorOnSurface"
+                            tools:text="0.0" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="%"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- -------------------------------------------------------- -->
+            <!-- CHART — MPAndroidChart LineChart replaces GraphView       -->
+            <!-- -------------------------------------------------------- -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardChart"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:textSize="48sp"
-                android:textColor="@color/colorText"
-                android:text="---"
-                />
+                android:minHeight="220dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="1dp"
+                android:layout_marginBottom="80dp">
+
+                <!-- MPAndroidChart LineChart -->
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/lineChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="8dp" />
+
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-        <TextView
-            android:id="@+id/artifactsLabel"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="@string/ArtifactsSamplesThreshold_UI"
-            android:fontFamily="sans-serif"
-            android:gravity="center_horizontal"
-            android:textAlignment="center"
-            android:textColor="@color/colorBlue"
-            android:textSize="12sp" />
+    <!-- ================================================================ -->
+    <!-- BOTTOM APP BAR + FAB                                             -->
+    <!-- ================================================================ -->
 
-        <TextView
-            android:id="@+id/artifactsView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="--/-- (--%)"
-            android:fontFamily="sans-serif"
-            android:gravity="center_horizontal"
-            android:textAlignment="center"
-            android:textColor="@color/colorText"
-            android:textSize="32sp" />
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:hideOnScroll="false"
+        app:menu="@menu/bottom_menu"
+        app:fabCradleMargin="8dp"
+        app:fabCradleRoundedCornerRadius="8dp" />
 
-        <com.jjoe64.graphview.GraphView
-            android:layout_width="match_parent"
-            android:layout_height="360dip"
-            android:id="@+id/graph"
-            />
+    <!-- Primary action: Connect / Disconnect -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabConnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="Connect to sensor"
+        app:srcCompat="@drawable/ic_bluetooth_connect"
+        app:layout_anchor="@id/bottomAppBar" />
 
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="match_parent"
-            android:layout_height="46dp"
-            android:text="TextView"
-            android:textColor="@color/colorText" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-        <!-- res/layout/example_activity.xml -->
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/settings_container"
-            android:layout_width="match_parent"
-            android:layout_height="955dp" />
+<!--
+    ====================================================================
+    VIEW IDs REFERENCE — for updating MainActivity.java / ViewBinding
+    ====================================================================
 
-    </LinearLayout>
-</ScrollView>
+    AppBar / status:
+        binding.toolbar                  MaterialToolbar
+        binding.chipConnectionStatus     connection status chip (setText "Connected" / "Disconnected")
+        binding.chipElapsedTime          elapsed time chip (setText "12:34")
+
+    α1 hero card:
+        binding.textAlpha1Value          main α1 number (setText String.format("%.2f", alpha1))
+        binding.chipZoneLabel            zone description (setText "Below VT1 — Fat burning zone")
+        binding.cardAlpha1               card root (setCardBackgroundColor for zone colour)
+
+    Stats row:
+        binding.textHeartRate            HR value
+        binding.textRMSSD                RMSSD value
+        binding.textArtifacts            artifact % value
+
+    Chart:
+        binding.lineChart                MPAndroidChart LineChart — see ChartHelper.java
+
+    Bottom:
+        binding.bottomAppBar             BottomAppBar
+        binding.fabConnect               connect/disconnect FAB
+
+    ====================================================================
+    MENU FILES NEEDED (create these in res/menu/):
+    ====================================================================
+
+    res/menu/main_menu.xml:
+        - Settings (navigates to SettingsActivity)
+        - About
+
+    res/menu/bottom_menu.xml:
+        - Export logs (calls FileExportHelper)
+        - Replay mode toggle
+        - Screen on/off toggle
+
+    ====================================================================
+    DRAWABLES NEEDED (create vector assets in res/drawable/):
+    ====================================================================
+        ic_heart_rate.xml        — heart/pulse icon for toolbar
+        ic_bluetooth.xml         — BT icon for connection chip
+        ic_bluetooth_connect.xml — FAB icon (BT with + symbol when disconnected)
+
+    These can all be added via Android Studio:
+    Right-click res/drawable → New → Vector Asset → search clip art library
+-->
