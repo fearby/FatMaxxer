@@ -77,7 +77,7 @@ dependencies {
 
     // ---- Polar BLE SDK (keep whatever version upstream uses) ----
     // Check upstream app/build.gradle for exact version; example:
-    implementation 'com.github.polarofficial:polar-ble-sdk:5.9.0'
+    implementation 'com.github.polarofficial:polar-ble-sdk:5.5.0'
 
     // ---- EJML (matrix library used for DFA calculation) ----
     implementation 'org.ejml:ejml-simple:0.43.1'

@@ -47,13 +47,6 @@ import androidx.core.content.FileProvider;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 
-import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.series.DataPoint;
-import com.jjoe64.graphview.series.DataPointInterface;
-import com.jjoe64.graphview.series.LineGraphSeries;
-import com.jjoe64.graphview.series.OnDataPointTapListener;
-import com.jjoe64.graphview.series.Series;
-
 import org.ejml.simple.SimpleMatrix;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
@@ -82,6 +75,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import online.fatmaxxer.publicRelease1.databinding.ActivityMainBinding;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -138,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
 
     public MainActivity() {
         //super(R.layout.activity_fragment_container);
-        super(R.layout.activity_main);
+        super();
         Log = new Log();
     }
 
@@ -1002,26 +997,8 @@ public class MainActivity extends AppCompatActivity {
     //    PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
 //    PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag");
 
-    ScrollView scrollView;
-
-    GraphView graphView;
-    LineGraphSeries<DataPoint> hrSeries = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> rrSeries = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> a1V2Series = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> a1HRVvt1Series = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> a1HRVvt2Series = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> a125Series = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> a1125Series = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> a1175Series = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> artifactSeries = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> rmssdSeries = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> hrWinSeries = new LineGraphSeries<DataPoint>();
-    LineGraphSeries<DataPoint> ecgPeakSeries = new LineGraphSeries<DataPoint>();
-
-    final int maxDataPoints = 65535;
-    final double graphViewPortWidth = 2.0;
-    final int graphMaxHR = 200;
-    final int graphMaxErrorRatePercent = 10;
+    private ActivityMainBinding binding;
+    private ChartHelper chartHelper;
 
     /**
      * Return date in specified format.
@@ -1830,7 +1807,9 @@ public class MainActivity extends AppCompatActivity {
         actionBar.setIcon(R.mipmap.ic_launcher_foreground);
 
         //setContentView(R.layout.activity_fragment_container);
-        setContentView(R.layout.activity_main);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        chartHelper = new ChartHelper(binding.lineChart);
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -1902,126 +1881,7 @@ public class MainActivity extends AppCompatActivity {
         mp = MediaPlayer.create(this, R.raw.artifact);
         mp.setVolume(100, 100);
 
-        graphView = (GraphView) findViewById(R.id.graph);
-        // activate horizontal zooming and scrolling
-        graphView.getViewport().setScalable(true);
-        // sadly, that's butt-ugly
-        //graphView.getViewport().setScalableY(true);
-        graphView.getViewport().setScrollable(true);
-        graphView.getViewport().setXAxisBoundsManual(true);
-        graphView.getViewport().setMinX(0);
-        graphView.getViewport().setMaxX(graphViewPortWidth);
-        graphView.getViewport().setYAxisBoundsManual(true);
-        graphView.getViewport().setMinY(0);
-        graphView.getViewport().setMaxY(graphMaxHR);
-        graphView.getGridLabelRenderer().setNumVerticalLabels(5); // 5 is the magic number that works reliably...
-        //
-        graphView.addSeries(a125Series);
-        graphView.addSeries(a1125Series);
-        graphView.addSeries(a1175Series);
-        graphView.addSeries(a1HRVvt1Series);
-        graphView.addSeries(a1HRVvt2Series);
-        // actual features
-        graphView.addSeries(hrSeries);
-        graphView.addSeries(a1V2Series);
-        graphView.addSeries(rrSeries);
-        graphView.addSeries(rmssdSeries);
-        graphView.addSeries(hrWinSeries);
-        graphView.addSeries(ecgPeakSeries);
-        // REQUIRED
-        graphView.getSecondScale().addSeries(artifactSeries);
-        graphView.getSecondScale().setMaxY(10);
-        graphView.getSecondScale().setMinY(0);
-        rrSeries.setColor(Color.MAGENTA);
-        rrSeries.setThickness(5);
-        a1V2Series.setColor(Color.GREEN);
-        a1V2Series.setThickness(5);
-        a1HRVvt1Series.setColor(getResources().getColor(R.color.colorHRVvt1));
-        a1HRVvt2Series.setColor(getResources().getColor(R.color.colorHRVvt2));
-        a125Series.setColor(Color.GRAY);
-        a1175Series.setColor(Color.GRAY);
-        a1125Series.setColor(Color.GRAY);
-        a125Series.setThickness(1);
-        a1125Series.setThickness(1);
-        a1175Series.setThickness(1);
-        hrSeries.setColor(Color.RED);
-        artifactSeries.setColor(Color.BLUE);
-        rmssdSeries.setColor(getResources().getColor(R.color.rmssdSeries));
-        hrWinSeries.setColor(getResources().getColor(R.color.hrWinSeries));
-        ecgPeakSeries.setColor(getResources().getColor(R.color.peakECGSeries));
-        // yellow is a lot less visible than red
-        a1HRVvt1Series.setThickness(6);
-        // red is a lot more visible than yellow
-        a1HRVvt2Series.setThickness(2);
 
-        rrSeries.appendData(new DataPoint(0,0), false, maxDataPoints);
-        hrSeries.appendData(new DataPoint(0,0), false, maxDataPoints);
-        a1V2Series.appendData(new DataPoint(0,0), false, maxDataPoints);
-        rmssdSeries.appendData(new DataPoint(0,0),false,maxDataPoints);
-        hrWinSeries.appendData(new DataPoint(0,0),false,maxDataPoints);
-        artifactSeries.appendData(new DataPoint(0,0), false, maxDataPoints);
-        ecgPeakSeries.appendData(new DataPoint(0,0),false, maxDataPoints);
-
-        a1V2Series.setOnDataPointTapListener(new OnDataPointTapListener() {
-            @Override
-            public void onTap(Series series, DataPointInterface dataPoint) {
-                String text = "["+formatMinAsTime(dataPoint.getX()) + ", " + (dataPoint.getY() / 100.0)+" ]";
-                Toast.makeText(thisContext, getString(R.string.Alpha1)+"("+getString(R.string.TwoMinutesAbbrev)+"): "+text, Toast.LENGTH_LONG).show();
-            }
-        });
-        rmssdSeries.setOnDataPointTapListener(new OnDataPointTapListener() {
-            @Override
-            public void onTap(Series series, DataPointInterface dataPoint) {
-                String text = "["+formatMinAsTime(dataPoint.getX()) + ", " +(dataPoint.getY() / 2.0)+" ]";
-                Toast.makeText(thisContext, getString(R.string.RootMeanSquareSuccessiveDifferencesAbbreviation)+"("+getString(R.string.TwoMinutesAbbrev)+"): "+text, Toast.LENGTH_LONG).show();
-            }
-        });
-        hrSeries.setOnDataPointTapListener(new OnDataPointTapListener() {
-            @Override
-            public void onTap(Series series, DataPointInterface dataPoint) {
-                String text = "["+formatMinAsTime(dataPoint.getX()) + ", " +dataPoint.getY()+"] ";
-                Toast.makeText(thisContext, getString(R.string.HeartRateAbbrev)+": "+text, Toast.LENGTH_LONG).show();
-            }
-        });
-        hrWinSeries.setOnDataPointTapListener(new OnDataPointTapListener() {
-            @Override
-            public void onTap(Series series, DataPointInterface dataPoint) {
-                String text = "["+formatMinAsTime(dataPoint.getX()) + ", " +dataPoint.getY()+" ]";
-                Toast.makeText(thisContext, getString(R.string.HeartRateAbbrev)+"("+getString(R.string.TwoMinutesAbbrev)+": "+text, Toast.LENGTH_LONG).show();
-            }
-        });
-        artifactSeries.setOnDataPointTapListener(new OnDataPointTapListener() {
-            @Override
-            public void onTap(Series series, DataPointInterface dataPoint) {
-                String text = "["+formatMinAsTime(dataPoint.getX()) + ", " +dataPoint.getY()+"% ]";
-                Toast.makeText(thisContext, getString(R.string.Artifacts)+": "+text, Toast.LENGTH_LONG).show();
-            }
-        });
-        ecgPeakSeries.setOnDataPointTapListener(new OnDataPointTapListener() {
-            @Override
-            public void onTap(Series series, DataPointInterface dataPoint) {
-                String text = "["+formatMinAsTime(dataPoint.getX()) + ", " +(dataPoint.getY()*10.0)+"uV ]";
-                Toast.makeText(thisContext, "Peak ECG: "+text, Toast.LENGTH_LONG).show();
-            }
-        });
-        rrSeries.setOnDataPointTapListener(new OnDataPointTapListener() {
-            @Override
-            public void onTap(Series series, DataPointInterface dataPoint) {
-                String text = "["+formatMinAsTime(dataPoint.getX()) + ", " +(dataPoint.getY()*5)+" ]";
-                Toast.makeText(thisContext, getString(R.string.RRIntervalAbbrev)+": "+text, Toast.LENGTH_LONG).show();
-            }
-        });
-
-        a1HRVvt1Series.appendData(new DataPoint(0, alpha1HRVvt1 * 100), false, maxDataPoints);
-        a1HRVvt2Series.appendData(new DataPoint(0, alpha1HRVvt2 * 100), false, maxDataPoints);
-        a125Series.appendData(new DataPoint(0, 25), false, maxDataPoints);
-        a1125Series.appendData(new DataPoint(0, 125), false, maxDataPoints);
-        a1175Series.appendData(new DataPoint(0, 175), false, maxDataPoints);
-        a1HRVvt1Series.appendData(new DataPoint(graphViewPortWidth, alpha1HRVvt1 * 100), false, maxDataPoints);
-        a1HRVvt2Series.appendData(new DataPoint(graphViewPortWidth, alpha1HRVvt2 * 100), false, maxDataPoints);
-        a125Series.appendData(new DataPoint(graphViewPortWidth, 25), false, maxDataPoints);
-        a1125Series.appendData(new DataPoint(graphViewPortWidth, 125), false, maxDataPoints);
-        a1175Series.appendData(new DataPoint(graphViewPortWidth, 175), false, maxDataPoints);
 
 
         //hrvSeries.setColor(Color.BLUE);
