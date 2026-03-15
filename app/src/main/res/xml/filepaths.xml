@@ -1,4 +1,0 @@
-<paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <files-path name="logs" path="logs/" />
-    <external-files-path name="logs" path="logs/" />
-</paths>

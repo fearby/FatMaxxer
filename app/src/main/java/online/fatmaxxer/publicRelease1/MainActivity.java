@@ -16,7 +16,6 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
@@ -25,7 +24,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.provider.OpenableColumns;
-import android.speech.tts.TextToSpeech;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -47,7 +45,6 @@ import androidx.core.content.FileProvider;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 
-import org.ejml.simple.SimpleMatrix;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -55,7 +52,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -63,7 +59,6 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -95,9 +90,7 @@ import com.polar.sdk.api.model.PolarSensorSetting;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.max;
-import static java.lang.Math.pow;
 import static java.lang.Math.round;
-import static java.lang.Math.sqrt;
 
 import static online.fatmaxxer.publicRelease1.MainActivity.FMMenuItem.*;
 
@@ -115,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
     public static final String NOTIFICATIONS_ENABLED_PREFERENCE_STRING = "notificationsEnabled";
     public static final String POLAR_DEVICE_ID_PREFERENCE_STRING = "polarDeviceID";
     public static final String KEEP_LOGS_PREFERENCE_STRING = "keepLogs";
-    //public static final String EXPERIMENTAL_PREFERENCE_STRING = "experimental";
     public static final String KEEP_SCREEN_ON_PREFERENCE_STRING = "keepScreenOn";
     public static final String NOTIFICATION_DETAIL_PREFERENCE_STRING = "notificationDetail";
     public static final String RR_LOGFILE_HEADER = "timestamp, rr, since_start ";
@@ -125,10 +117,9 @@ public class MainActivity extends AppCompatActivity {
 
     final double alpha1HRVvt1 = 0.75;
     final double alpha1HRVvt2 = 0.5;
-    private int a1v2cacheMisses = 0;
-    private long lastScrollToEndElapsedSec = 0;
+    private DFACalculator dfaCalculator;
+    private SessionLogger sessionLogger;
     private int lastObservedHRNotificationWithArtifacts = 0;
-    private File logsDir;
     // system time of first observed ecg sample
     private long ecgStartTSmillis;
     // timestamp of first observed ecg sample
@@ -191,29 +182,9 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(getBaseContext(), R.string.UseMenuQuitToExit, Toast.LENGTH_LONG).show();
     }
 
-    private final double[] samples1 = {667.0, 674.0, 688.0, 704.0, 690.0, 688.0, 671.0, 652.0, 644.0, 636.0, 631.0, 639.0, 637.0, 634.0, 642.0, 642.0,
-            653.0, 718.0, 765.0, 758.0, 729.0, 713.0, 691.0, 677.0, 694.0, 695.0, 692.0, 684.0, 685.0, 677.0, 667.0, 657.0, 648.0, 632.0,
-            652.0, 641.0, 644.0, 665.0, 711.0, 753.0, 772.0, 804.0, 844.0, 842.0, 833.0, 818.0, 793.0, 781.0, 799.0, 822.0, 820.0, 835.0,
-            799.0, 793.0, 745.0, 764.0, 754.0, 764.0, 768.0, 764.0, 770.0, 766.0, 765.0, 777.0, 767.0, 756.0, 724.0, 747.0, 812.0, 893.0,
-            905.0, 924.0, 945.0, 946.0, 897.0, 857.0, 822.0, 571.0, 947.0, 770.0, 794.0, 840.0, 805.0, 1593.0, 763.0, 1498.0, 735.0,
-            745.0, 742.0, 737.0, 748.0, 756.0, 756.0, 762.0, 783.0, 814.0, 826.0, 838.0, 865.0, 877.0, 859.0, 858.0, 855.0, 861.0, 870.0,
-            902.0, 902.0, 879.0, 847.0, 835.0, 847.0, 884.0, 940.0, 971.0, 936.0, 896.0, 873.0, 879.0, 888.0, 896.0, 904.0, 902.0, 901.0, 899.0,
-            893.0, 914.0, 997.0, 966.0, 902.0, 899.0, 909.0, 933.0, 954.0, 947.0, 892.0, 830.0, 825.0, 813.0, 790.0, 759.0, 744.0, 739.0,
-            724.0, 699.0, 1401.0, 694.0, 684.0, 683.0, 696.0, 710.0, 738.0};
-    private final double samples1_hr = 80;
-    private final double samples1_alpha1 = 0.86;
-    private final double samples1_rmssd = 158;
-
     PolarBleApi api;
     Disposable broadcastDisposable;
     Disposable ecgDisposable = null;
-//    Disposable accDisposable;
-//    Disposable gyrDisposable;
-//    Disposable magDisposable;
-//    Disposable ppgDisposable;
-//    Disposable ppiDisposable;
-//    Disposable scanDisposable;
-//    Disposable autoConnectDisposable;
     String SENSOR_ID = "";
     SharedPreferences sharedPreferences;
 
@@ -397,471 +368,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // https://www.bragitoff.com/2017/04/polynomial-fitting-java-codeprogram-works-android-well/
-            /*  int n;                       //degree of polynomial to fit the data
-                double[] x=double[];         //array to store x-axis data points
-                double[] y=double[];         //array to store y-axis data points
-            */
-    public double[] polyFit(double[] x, double[] y, int degree) {
-        //Log.d(TAG, "polyFit x.length "+x.length+" y.length "+y.length+" degree "+degree);
-        int n = degree;
-        int length = x.length;
-        // ASSERT: x.length == y.length
-        double X[] = new double[2 * n + 1];
-        for (int i = 0; i < 2 * n + 1; i++) {
-            X[i] = 0;
-            for (int j = 0; j < length; j++) {
-                X[i] = X[i] + pow(x[j], i);        //consecutive positions of the array will store length,sigma(xi),sigma(xi^2),sigma(xi^3)....sigma(xi^2n)
-            }
-        }
-        double[][] B = new double[n + 1][n + 2];            //B is the Normal matrix(augmented) that will store the equations, 'a' is for value of the final coefficients
-        double[] a = new double[n + 1];
-        for (int i = 0; i <= n; i++)
-            for (int j = 0; j <= n; j++)
-                B[i][j] = X[i + j];            //Build the Normal matrix by storing the corresponding coefficients at the right positions except the last column of the matrix
-        double Y[] = new double[n + 1];                    //Array to store the values of sigma(yi),sigma(xi*yi),sigma(xi^2*yi)...sigma(xi^n*yi)
-        for (int i = 0; i < n + 1; i++) {
-            Y[i] = 0;
-            for (int j = 0; j < length; j++)
-                Y[i] = Y[i] + pow(x[j], i) * y[j];        //consecutive positions will store sigma(yi),sigma(xi*yi),sigma(xi^2*yi)...sigma(xi^n*yi)
-        }
-        for (int i = 0; i <= n; i++)
-            B[i][n + 1] = Y[i];                //load the values of Y as the last column of B(Normal Matrix but augmented)
-        n = n + 1;
-        for (int i = 0; i < n; i++)                    //From now Gaussian Elimination starts(can be ignored) to solve the set of linear equations (Pivotisation)
-            for (int k = i + 1; k < n; k++)
-                if (B[i][i] < B[k][i])
-                    for (int j = 0; j <= n; j++) {
-                        double temp = B[i][j];
-                        B[i][j] = B[k][j];
-                        B[k][j] = temp;
-                    }
-        for (int i = 0; i < n - 1; i++)            //loop to perform the gauss elimination
-            for (int k = i + 1; k < n; k++) {
-                double t = B[k][i] / B[i][i];
-                for (int j = 0; j <= n; j++)
-                    B[k][j] = B[k][j] - t * B[i][j];    //make the elements below the pivot elements equal to zero or elimnate the variables
-            }
-        for (int i = n - 1; i >= 0; i--)                //back-substitution
-        {                        //x is an array whose values correspond to the values of x,y,z..
-            a[i] = B[i][n];                //make the variable to be calculated equal to the rhs of the last equation
-            for (int j = 0; j < n; j++)
-                if (j != i)            //then subtract all the lhs values except the coefficient of the variable whose value                                   is being calculated
-                    a[i] = a[i] - B[i][j] * a[j];
-            a[i] = a[i] / B[i][i];            //now finally divide the rhs by the coefficient of the variable to be calculated
-        }
-        return a;
-    }
-
-    public double[] v_reverse(double[] x) {
-        double[] result = new double[x.length];
-        for (int i = 0; i < x.length; i++) {
-            result[x.length - i - 1] = x[i];
-        }
-        return result;
-    }
-
-    private boolean v_contains(double[] x, Function<Double, Boolean> t) {
-        for (int i = 0; i < x.length; i++) {
-            try {
-                if (t.apply(x[i])) return true;
-            } catch (Throwable throwable) {
-                if (text_view != null) text_view.setText("Exception " + throwable.toString());
-                logException("v_contains ", throwable);
-            }
-        }
-        return false;
-    }
-
-    public String v_toString(double[] x) {
-        StringBuilder result = new StringBuilder();
-        result.append("[" + x.length + "]{");
-        for (int i = 0; i < x.length; i++) {
-            if (i != 0) {
-                result.append(", ");
-            }
-            result.append("" + i + ":" + x[i]);
-        }
-        result.append("}");
-        return result.toString();
-    }
-
-    // p are coefficients
-    // x are values for x
-    public double[] polyVal(double[] p, double[] x) {
-        double[] result = new double[x.length];
-        for (int i = 0; i < x.length; i++) {
-            result[i] = 0;
-            for (int j = 0; j < p.length; j++) {
-                double product = 1;
-                int exponent = p.length - j - 1;
-                for (int k = 0; k < exponent; k++) {
-                    product *= x[i];
-                }
-                result[i] += p[j] * product;
-            }
-        }
-        return result;
-    }
-
-    public double[] v_zero(int l) {
-        double result[] = new double[l];
-        for (int i = 0; i < l; i++) {
-            result[i] = 0;
-        }
-        return result;
-    }
-
-    public double[] v_cumsum(double[] x) {
-        double result[] = new double[x.length];
-        double acc = 0;
-        for (int i = 0; i < x.length; i++) {
-            acc = acc + x[i];
-            result[i] = acc;
-        }
-        return result;
-    }
-
-    //
-    public double[] v_cumsum(double c, double[] x) {
-        double result[] = new double[x.length + 1];
-        result[0] = c;
-        for (int i = 0; i < x.length; i++) {
-            result[i + 1] = result[i] + x[i];
-        }
-        return result;
-    }
-
-    public double[] v_subscalar(double[] x, double y) {
-        double result[] = new double[x.length];
-        for (int i = 0; i < x.length; i++) {
-            result[i] = x[i] - y;
-        }
-        return result;
-    }
-
-    // return x[x_offset...x_offset+length] - y
-    public double[] v_slice(double[] x, int x_offset, int length) {
-        double result[] = new double[length];
-        for (int i = 0; i < length; i++) {
-            result[i] = x[x_offset + i];
-        }
-        return result;
-    }
-
-    public double[] v_tail(double[] x) {
-        //Log.d(TAG, "v_subtract length  "+length);
-        double result[] = new double[x.length - 1];
-        for (int i = 1; i < x.length; i++) {
-            result[i - 1] = x[i];
-        }
-        //Log.d(TAG,"v_subtract returning "+v_toString(result));
-        return result;
-    }
-
-    public double[] v_subtract(double[] x, double[] y, int x_offset, int length) {
-        if (length != y.length)
-            throw new IllegalArgumentException(("vector subtraction of unequal lengths"));
-        //Log.d(TAG, "v_subtract length  "+length);
-        double result[] = new double[length];
-        for (int i = 0; i < length; i++) {
-            result[i] = x[x_offset + i] - y[i];
-        }
-        //Log.d(TAG,"v_subtract returning "+v_toString(result));
-        return result;
-    }
-
-    public double[] v_subtract(double[] x, double[] y) {
-        return v_subtract(x, y, 0, x.length);
-    }
-
-    public double v_sum(double[] x) {
-        double sum = 0;
-        for (int i = 0; i < x.length; i++) {
-            //Log.d(TAG,"v_sum "+i+" "+x[i]);
-            sum += x[i];
-        }
-        //Log.d(TAG,"v_sum "+sum);
-        return sum;
-    }
-
-    public double v_mean(double[] x) {
-        double result = ((double) v_sum(x)) / x.length;
-        //Log.d(TAG,"v_mean ("+v_toString(x)+") == "+result);
-        return result;
-    }
-
-    public double[] v_abs(double[] x) {
-        double[] result = new double[x.length];
-        for (int i = 0; i < x.length; i++) {
-            result[i] = abs(x[i]);
-        }
-        //Log.d(TAG,"v_abs ("+v_toString(x)+") == "+result);
-        return result;
-    }
-
-    // aka dRR
-    public double[] v_differential(double[] x) {
-        double[] result = new double[x.length - 1];
-        for (int i = 0; i < (x.length - 1); i++) {
-            result[i] = x[i + 1] - x[i];
-        }
-        //Log.d(TAG,"v_diff ("+v_toString(x)+"\n) == "+v_toString(result));
-        return result;
-    }
-
-    public double[] v_power_s1(double x, double[] y) {
-        double result[] = new double[y.length];
-        for (int i = 0; i < y.length; i++) {
-            result[i] = pow(x, y[i]);
-        }
-        return result;
-    }
-
-    public double[] v_power_s2(double[] x, double y) {
-        double[] result = new double[x.length];
-        for (int i = 0; i < x.length; i++) {
-            result[i] = pow(x[i], y);
-        }
-        //Log.d(TAG,"v_power_s2 result "+v_toString(result));
-        return result;
-    }
-
-    public double[] v_logN(double[] x, double n) {
-        double result[] = new double[x.length];
-        for (int i = 0; i < x.length; i++) {
-            result[i] = Math.log10(x[i]) / Math.log10(n);
-        }
-        return result;
-    }
-
-    // num: how many samples
-    public double[] arange(int min, int max, int num) {
-        double result[] = new double[num];
-        double acc = min;
-        double delta = ((double) (max * 1.0 - min * 1.0)) / num;
-        for (int i = 0; i < num; i++) {
-            result[i] = acc;
-            acc += delta;
-        }
-        return result;
-    }
-
-    private double getRMSDetrended(double[] x, int scale, double[] scale_ax, int offset, boolean smoothN) {
-        String smoothn = smoothN ? "v2" : "v1";
-        double[] xbox = v_slice(x, offset, scale);
-        //Log.d(TAG,"getrmsdetrended "+smoothn+" "+ scale +" cut@"+ offset +" xbox "+v_toString(xbox));
-        //     coeff = np.polyfit(scale_ax, xcut, 1)
-        double[] ybox = null;
-        if (smoothN) {
-            //Log.d(TAG,"rms smoothn");
-            ybox = smoothnessPriorsDetrending(xbox);
-        } else {
-            ybox = xbox;
-        }
-        double[] coeff = v_reverse(polyFit(scale_ax, ybox, 1));
-        //Log.d(TAG,"rmsd coeff "+v_toString(coeff));
-        //     xfit = np.polyval(coeff, scale_ax)
-        double[] xfit = polyVal(coeff, scale_ax);
-        //Log.d(TAG,"xfit "+v_toString(xfit));
-        //Log.d(TAG,"rmsd xfit "+v_toString(xfit));
-        //     # detrending and computing RMS of each window
-        //     rms[e] = np.sqrt(np.mean((xcut-xfit)**2))
-        double[] finalSegment = v_subtract(ybox, xfit, 0, scale);
-        //Log.d(TAG,"getDetrendedMean final "+v_toString(finalSegment));
-        double mean = v_mean(v_power_s2(finalSegment, 2));
-        //Log.d(TAG,"getDetrendedMean mean "+mean);
-        return mean;
-    }
-
-    // RMS + detrending
-    // - divide x into x.length/scale non-overlapping boxes of size scale
-    public double[] rmsDetrended(double[] x, int scale, boolean smoothN) {
-        //Log.d(TAG,"rms_detrended call, scale "+scale);
-        int nrboxes = x.length / scale;
-        // # making an array with data divided in windows
-        // shape = (x.shape[0]//scale, scale)
-        // X = np.lib.stride_tricks.as_strided(x,shape=shape)
-        // # vector of x-axis points to regression
-        // scale_ax = np.arange(scale)
-        double scale_ax[] = arange(0, scale, scale);
-        //Log.d(TAG,"rms_detrended scale_ax "+v_toString(scale_ax));
-        // rms = np.zeros(X.shape[0])
-        double rms[] = v_zero(nrboxes * 2);
-        // for e, xcut in enumerate(X):
-        int offset = 0;
-        for (int i = 0; i < nrboxes; i++) {
-            // root mean square SUCCESSIVE DIFFERENCES
-            double mean = getRMSDetrended(x, scale, scale_ax, offset, smoothN);
-            rms[i] = sqrt(mean);
-            //Log.d(TAG,"rmsd box "+i+" "+" "+rms[i]);
-            offset += scale;
-        }
-        // boxes in reverse order starting with a "last" box aligned to the very end of the data
-        offset = x.length - scale;
-        for (int i = nrboxes; i < nrboxes * 2; i++) {
-            double mean = getRMSDetrended(x, scale, scale_ax, offset, smoothN);
-            rms[i] = sqrt(mean);
-            //Log.d(TAG,"rmsd box "+i+" "+" "+rms[i]);
-            offset -= scale;
-        }
-        //Log.d(TAG,"rms_detrended all @scale "+scale+"("+rms.length+")"+v_toString(rms));
-        //     return rms
-        return rms;
-    }
-
-    public void logMatrix(String id, SimpleMatrix m) {
-        for (int i = 0; i < m.numRows(); i++) {
-            Log.d(TAG,id+": Mat:"+m.numRows()+","+m.numCols()+"[");
-            StringBuilder row = new StringBuilder();
-            for (int j = 0; j < m.numCols(); j++) {
-                row.append(m.get(i, j)+" ");
-            }
-            Log.d(TAG,"  Row: "+i+" [" + row + "]\n");
-        }
-    }
-
-    // cache -> lambda -> size -> DD matrix
-    private Map<Integer, SimpleMatrix[]> detrendingFactorMatrices = new HashMap<Integer, SimpleMatrix[]>();
-    // let's see how we go with that!
-    final int maxWindowSize = 440;
-
-    public SimpleMatrix detrendingFactorMatrix(int length, int lambda) {
-        //Log.d(TAG, "detrendingFactorMatrix size "+length);
-        int T = length;
-        // new value for lambda(?)
-        if (detrendingFactorMatrices.get(lambda) == null) {
-            detrendingFactorMatrices.put(lambda, new SimpleMatrix[maxWindowSize]);
-        }
-        // previously-computed segment length
-        if (detrendingFactorMatrices.get(lambda)[T] != null) {
-            //String msg = "Pre-cached matrix lambda "+lambda+" length "+T;
-            //Log.d(TAG,msg);
-            //if (text_view != null) text_view.setText(msg);
-            return detrendingFactorMatrices.get(lambda)[T];
-        }
-        a1v2cacheMisses++;
-        // new segment length
-        //String msg = "Computing matrix lambda "+lambda+" length "+T;
-        long startTime = System.currentTimeMillis();
-        //Log.d(TAG,msg);
-        //if (text_view != null) text_view.setText(msg);
-        SimpleMatrix I = SimpleMatrix.identity(T);
-        SimpleMatrix D2 = new SimpleMatrix(T - 2, T);
-        for (int i = 0; i < D2.numRows(); i++) {
-            //Log.d(TAG,"D2 row "+i);
-            D2.set(i, i, 1);
-            D2.set(i, i + 1, -2);
-            D2.set(i, i + 2, 1);
-        }
-        //logMatrix("D2",D2);
-        SimpleMatrix sum = I.plus(D2.transpose().scale(lambda * lambda).mult(D2));
-        //Log.d(TAG, "createDetrendingFactorMatrix inverse...");
-        //Log.d(TAG, "inverse done");
-        SimpleMatrix result = I.minus(sum.invert());
-        //logMatrix("result",result);
-        detrendingFactorMatrices.get(lambda)[T] = result;
-        //Log.d(TAG, "detrendingFactorMatrix length returned "+result.toString());
-        long endTime = System.currentTimeMillis();
-        String endMsg = "Computing matrix finished "+(endTime - startTime)+"ms, lambda "+lambda+" length "+T;
-        Log.d(TAG,endMsg);
-        return result;
-    }
-
-    public double[] smoothnessPriorsDetrending(double[] dRR) {
-        //Log.d(TAG,"smoothnDetrending dRR "+v_toString(dRR));
-        // convert dRRs to vector (SimpleMatrix)
-        SimpleMatrix dRRvec = new SimpleMatrix(dRR.length, 1);
-        for (int i = 0; i < dRR.length; i++) {
-            dRRvec.set(i, 0, dRR[i]);
-        }
-        // lambda=500: https://internal-journal.frontiersin.org/articles/10.3389/fspor.2021.668812/full
-        SimpleMatrix detrended = detrendingFactorMatrix(dRRvec.numRows(), lambdaSetting).mult(dRRvec);
-        //Log.d(TAG,"detrendingv2: "+detrended.numRows()+" "+detrended.numCols());
-        int size = detrended.numRows();
-        double[] result = new double[size];
-        for (int i = 0; i < size; i++) {
-            result[i] = detrended.get(i, 0);
-        }
-        //Log.d("TAG","smoothnDetrending ("+v_toString(dRR)+")\n  == "+v_toString(result));
-        return result;
-    }
-
-    public double dfaAlpha1V2(double x[], int l_lim, int u_lim, int nrscales) {
-        return dfaAlpha1V1(x, l_lim, u_lim, nrscales, true);
-    }
-
-    // x: samples; l_lim: lower limit; u_lim: upper limit
-    public double dfaAlpha1V1(double xUnsmoothed[], int l_lim, int u_lim, int nrscales, boolean smoothN) {
-        double[] x;
-
-        if (smoothN) {
-            x = smoothnessPriorsDetrending(xUnsmoothed);
-        } else {
-            x = xUnsmoothed;
-        }
-        // nothing more to do...
-        smoothN = false;
-
-        String smoothn = smoothN ? "v2" : "v1";
-        //Log.d(TAG, "dfaAlpha1...v2? " + smoothN);
-        double mean = v_mean(x);
-        //Log.d(TAG, "dfaAlpha1 mean " + mean);
-        double[] y = v_cumsum(v_subscalar(x, mean));
-        //Log.d(TAG, "dfaAlpha1 alpha1 y " + v_toString(y));
-        // scales = (2**np.arange(scale_lim[0], scale_lim[1], scale_dens)).astype(np.int)
-        double[] scales = v_power_s1(2, arange(l_lim, u_lim, nrscales));
-        double[] exp_scales = {3., 4., 4., 4., 4., 5., 5., 5., 5., 6., 6., 6., 7., 7., 7., 8., 8., 9.,
-                9., 9., 10., 10., 11., 12., 12., 13., 13., 14., 15., 15.};
-        // HACK - we know what scales are needed for now
-        scales = exp_scales;
-        if (scales != exp_scales) {
-            if (text_view != null) text_view.setText("IllegalStateException: wrong scales");
-            throw new IllegalStateException("wrong scales");
-        }
-        // fluct = np.zeros(len(scales))
-        double[] fluct = v_zero(scales.length);
-        // # computing RMS for each window
-        // for e, sc in enumerate(scales):
-        //   fluct[e] = np.sqrt(np.mean(calc_rms(y, sc)**2))
-        for (int i = 0; i < scales.length; i++) {
-            int sc = (int) (scales[i]);
-            //Log.d(TAG, "- scale "+i+" "+sc);
-            double[] sc_rms = rmsDetrended(y, sc, smoothN);
-            fluct[i] = sqrt(v_mean(v_power_s2(sc_rms, 2)));
-            //Log.d(TAG, "  - rms "+v_toString(sc_rms));
-            //Log.d(TAG, "  - scale "+i+" "+sc+" fluct "+fluct[i]);
-        }
-        //Log.d(TAG, "Polar dfa_alpha1, x "+v_toString(x));
-        //Log.d(TAG, "dfa_alpha1, scales " + v_toString(scales));
-        //Log.d(TAG, "dfa_alpha1 " + smoothn + " fluct: " + v_toString(fluct));
-        // # fitting a line to rms data
-        double[] coeff = v_reverse(polyFit(v_logN(scales, 2), v_logN(fluct, 2), 1));
-        //Log.d(TAG, "dfa_alpha1 coefficients " + v_toString(coeff));
-        double alpha = coeff[0];
-        //Log.d(TAG, "dfa_alpha1 = " + alpha);
-        return alpha;
-    }
-
     public void testDFA_alpha1() {
-        if (text_view != null) if (text_view != null) text_view.setText("Self-test DFA alpha1");
         Log.d(TAG, "testDFA_alpha1");
-        double[] values = {635.0, 628.0, 627.0, 625.0, 624.0, 627.0, 624.0, 623.0, 633.0, 636.0, 633.0, 628.0, 625.0, 628.0, 622.0, 621.0, 613.0, 608.0, 604.0, 612.0, 620.0, 616.0, 611.0, 616.0, 614.0, 622.0, 627.0, 625.0, 622.0, 617.0, 620.0, 622.0, 623.0, 615.0, 614.0, 627.0, 630.0, 632.0, 632.0, 632.0, 631.0, 627.0, 629.0, 634.0, 628.0, 625.0, 629.0, 633.0, 632.0, 628.0, 631.0, 631.0, 628.0, 623.0, 619.0, 618.0, 618.0, 628.0, 634.0, 631.0, 626.0, 633.0, 637.0, 636.0, 632.0, 634.0, 625.0, 614.0, 610.0, 607.0, 613.0, 616.0, 622.0, 625.0, 620.0, 633.0, 640.0, 639.0, 631.0, 626.0, 634.0, 628.0, 615.0, 610.0, 607.0, 611.0, 613.0, 614.0, 611.0, 608.0, 627.0, 625.0, 619.0, 618.0, 622.0, 625.0, 626.0, 625.0, 626.0, 624.0, 631.0, 631.0, 619.0, 611.0, 608.0, 607.0, 602.0, 586.0, 583.0, 576.0, 580.0, 571.0, 583.0, 591.0, 598.0, 607.0, 607.0, 621.0, 619.0, 622.0, 613.0, 604.0, 607.0, 603.0, 604.0, 598.0, 595.0, 592.0, 589.0, 594.0, 594.0, 602.0, 611.0, 614.0, 634.0, 635.0, 636.0, 628.0, 627.0, 628.0, 626.0, 619.0, 616.0, 616.0, 622.0, 615.0, 607.0, 611.0, 610.0, 619.0, 624.0, 625.0, 626.0, 633.0, 643.0, 647.0, 644.0, 644.0, 642.0, 645.0, 637.0, 628.0, 632.0, 633.0, 625.0, 626.0, 623.0, 620.0, 620.0, 610.0, 612.0, 612.0, 610.0, 614.0, 611.0, 609.0, 616.0, 624.0, 623.0, 618.0, 622.0, 623.0, 625.0, 629.0, 621.0, 622.0, 617.0, 619.0, 618.0, 610.0, 607.0, 606.0, 611.0};
-        // Altini Python code
-        // double exp_result = 1.5503173309573208;
-        // FIXME: tiny discrepancy in double precision between Python and Java impl(?!)
-        // This Java impl:
-        double exp_result = 1.5503173309573228;
-        double act_result = dfaAlpha1V1(values, 2, 4, 30, false);
-        if (Double.compare(exp_result, act_result) != 0) {
-            String msg = "expected " + exp_result + " got " + act_result;
-            if (text_view != null) if (text_view != null) text_view.setText("Self-test DFA alpha1 failed: " + msg);
-            Log.d(TAG, "***** testDFA_alpha1 failed " + msg + " *****");
-            throw new IllegalStateException("test failed, expected " + exp_result + " got " + act_result);
-        } else {
-            if (text_view != null) if (text_view != null) text_view.setText("Self-test DFA alpha1 passed");
-            Log.d(TAG, "Self-test DFA alpha1 passed");
-        }
+        dfaCalculator.selfTest();
+        Log.d(TAG, "Self-test DFA alpha1 passed");
     }
 
     TextView text_view;
@@ -923,7 +433,6 @@ public class MainActivity extends AppCompatActivity {
     // maximum tolerable variance of adjacent RR intervals
     double artifactCorrectionThreshold = 0.05;
     boolean disableArtifactCorrection = false;
-    final Set<String> emptyStringSet = new HashSet<String>();
     // elapsed time in terms of cumulative sum of all seen RRs (as for HRVLogger)
     long logRRelapsedMS = 0;
     // the last time (since epoch) a1 was evaluated
@@ -933,7 +442,6 @@ public class MainActivity extends AppCompatActivity {
     public long prevFeatPlotTimestampMS = 0;
     public double prevrr = 0;
     public boolean starting = false;
-    public long prevSpokenUpdateMS = 0;
     public int totalRejected = 0;
     public boolean thisIsFirstSample = false;
     long currentTimeMS;
@@ -945,57 +453,40 @@ public class MainActivity extends AppCompatActivity {
     static NotificationManagerCompat uiNotificationManager;
     static NotificationCompat.Builder uiNotificationBuilder;
 
-    private TextToSpeech ttobj;
-    MediaPlayer mp;
+    private AudioFeedbackManager audioFeedback;
 
-    private FileWriter rrLogStreamNew;
-    private FileWriter featureLogStreamNew;
-
-//    private FileWriter rrLogStreamLegacy;
-//    private FileWriter featureLogStreamLegacy;
-//    private FileWriter debugLogStream;
 
     private class Log {
         public int d(String tag, String msg) {
-            if (currentLogFiles.get("debug")!=null) writeLogFile(msg, "debug");
+            if (sessionLogger != null && sessionLogger.hasWriter("debug")) sessionLogger.writeLogFile(msg, "debug");
             return android.util.Log.d(tag, msg);
         }
 
         public int w(String tag, String msg) {
-            if (currentLogFiles.get("debug")!=null) writeLogFile(msg, "debug");
+            if (sessionLogger != null && sessionLogger.hasWriter("debug")) sessionLogger.writeLogFile(msg, "debug");
             return android.util.Log.e(tag, msg);
         }
 
         public int e(String tag, String msg) {
-            if (currentLogFiles.get("debug")!=null) writeLogFile(msg, "debug");
+            if (sessionLogger != null && sessionLogger.hasWriter("debug")) sessionLogger.writeLogFile(msg, "debug");
             return android.util.Log.e(tag, msg);
         }
 
         public int i(String tag, String msg) {
-            if (currentLogFiles.get("debug")!=null) writeLogFile(msg, "debug");
+            if (sessionLogger != null && sessionLogger.hasWriter("debug")) sessionLogger.writeLogFile(msg, "debug");
             return android.util.Log.i(tag, msg);
         }
 
         public int v(String tag, String s) {
-            if (currentLogFiles.get("debug")!=null) writeLogFile(s, "debug");
+            if (sessionLogger != null && sessionLogger.hasWriter("debug")) sessionLogger.writeLogFile(s, "debug");
             return android.util.Log.v(tag,s);
         }
     }
 
     private static Log Log;
 
-    private void closeLog(FileWriter fw) {
-        try {
-            fw.close();
-        } catch (IOException e) {
-            logException("IOException closing "+ fw.toString(), e);
-        }
-    }
-
     private void closeLogs() {
-        for (FileWriter fw : currentLogFileWriters.values()) {
-            closeLog(fw);
-        }
+        sessionLogger.closeLogs();
     }
 
     PowerManager powerManager;
@@ -1006,24 +497,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private ChartHelper chartHelper;
-    private float graphViewPortWidth = 2.0f;
-    private int maxDataPoints = 1000;
 
-    /**
-     * Return date in specified format.
-     *
-     * @param milliSeconds Date in milliseconds
-     * @param dateFormat   Date format
-     * @return String representing date in specified format
-     */
-    public static String getDate(long milliSeconds, String dateFormat) {
-        // Create a DateFormatter object for displaying date in specified format.
-        SimpleDateFormat formatter = new SimpleDateFormat(dateFormat);
-        // Create a calendar object that will convert the date and time value in milliseconds to date.
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(milliSeconds);
-        return formatter.format(calendar.getTime());
-    }
 
     static enum FMMenuItem {
         MENU_QUIT,
@@ -1138,8 +612,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void exportLogFiles() {
         ArrayList<Uri> logUris = new ArrayList<Uri>();
-        logUris.add(getUri(currentLogFiles.get("rr")));
-        logUris.add(getUri(currentLogFiles.get("features")));
+        logUris.add(getUri(sessionLogger.getLogFiles().get("rr")));
+        logUris.add(getUri(sessionLogger.getLogFiles().get("features")));
 
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
@@ -1200,52 +674,13 @@ public class MainActivity extends AppCompatActivity {
                 String msg = getString(R.string.RenameTo) +" "+ value;
                 Toast.makeText(getBaseContext(), msg, Toast.LENGTH_SHORT).show();
                 Log.d(TAG, msg);
-                File logsDir = getLogsDir();
-                renameLogs(value, currentLogFiles, logsDir);
+                sessionLogger.renameLogs(value);
             }
         });
-        alert.setNegativeButton(R.string.Cancel, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                // Canceled.
-            }
-        });
-
+        alert.setNegativeButton(R.string.Cancel, null);
         alert.show();
     }
 
-    private void renameLogs(String value, Map<String, File> logFiles, File logsDir) {
-        File newRR = new File(logsDir,makeLogfileName(value,"rr"));
-        File newFeatures = new File(logsDir,makeLogfileName(value,"features"));
-        File newDebug = new File(logsDir,makeLogfileName(value,"debug"));
-        File newECG = new File(logsDir,makeLogfileName(value,"ecg"));
-        if (logFiles.get("rr").renameTo(newRR))
-            logFiles.put("rr",newRR);
-        if (logFiles.get("features").renameTo(newFeatures))
-            logFiles.put("features",newFeatures);
-        if (logFiles.get("debug").renameTo(newDebug))
-            logFiles.put("debug",newDebug);
-        if (logFiles.containsKey("ecg") && logFiles.get("ecg").renameTo(newECG))
-            logFiles.put("ecg",newECG);
-    }
-
-    /*
-    // all but current logs
-    public ArrayList<Uri> oldLogFiles() {
-        Log.d(TAG, "oldLogFiles...");
-        ArrayList<Uri> allUris = new ArrayList<Uri>();
-        File logsDir = getLogsDir();
-        File[] allFiles = logsDir.listFiles();
-        for (File f : allFiles) {
-            Log.d(TAG, "Found log file: " + getUri(f));
-            if (currentLogFiles.values().contains(f)) {
-                Log.d(TAG, "- skipping current log");
-            } else {
-                allUris.add(getUri(f));
-            }
-        }
-        return allUris;
-    }
-     */
 
     public void exportFiles(ArrayList<Uri> allUris) {
         Intent shareIntent = new Intent();
@@ -1259,10 +694,10 @@ public class MainActivity extends AppCompatActivity {
     public void deleteCurrentLogFiles() {
         ArrayList<Uri> allUris = new ArrayList<Uri>();
         StringBuilder filenames = new StringBuilder();
-        deleteFile(currentLogFiles.get("rr"));
-        deleteFile(currentLogFiles.get("features"));
-        deleteFile(currentLogFiles.get("debug"));
-        deleteFile(currentLogFiles.get("ecg"));
+        deleteFile(sessionLogger.getLogFiles().get("rr"));
+        deleteFile(sessionLogger.getLogFiles().get("features"));
+        deleteFile(sessionLogger.getLogFiles().get("debug"));
+        deleteFile(sessionLogger.getLogFiles().get("ecg"));
     }
 
     public long durationMStoWholeDays(long durationMS) {
@@ -1301,7 +736,7 @@ public class MainActivity extends AppCompatActivity {
         File[] allFiles = logsDir.listFiles();
         StringBuilder filenames = new StringBuilder();
         for (File f : allFiles) {
-            if (!currentLogFiles.containsValue(f)) {
+            if (!sessionLogger.getLogFiles().containsValue(f)) {
                 Log.d(TAG, "deleting log file " + f);
                 f.delete();
                 filenames.append(f.getName() + " ");
@@ -1326,7 +761,7 @@ public class MainActivity extends AppCompatActivity {
         StringBuilder filenames = new StringBuilder();
         for (File f : allFiles) {
             Log.d(TAG, "deletion option on " + f);
-            if (!currentLogFiles.containsValue(f)) {
+            if (!sessionLogger.getLogFiles().containsValue(f)) {
                 Log.d(TAG, "deleting log file: " + f);
                 f.delete();
                 filenames.append(f.getName() + " ");
@@ -1345,7 +780,7 @@ public class MainActivity extends AppCompatActivity {
         privateRootDir.mkdir();
         File logsDir = new File(privateRootDir, "logs");
         logsDir.mkdir();
-        allUris.add(getUri(currentLogFiles.get("debug")));
+        allUris.add(getUri(sessionLogger.getLogFiles().get("debug")));
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
         shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, allUris);
@@ -1359,7 +794,7 @@ public class MainActivity extends AppCompatActivity {
         File[] allFiles = logsDir.listFiles();
         StringBuilder filenames = new StringBuilder();
         for (File f : allFiles) {
-            if (f.getName().endsWith(".debug.log") && !currentLogFiles.containsValue(f)) {
+            if (f.getName().endsWith(".debug.log") && !sessionLogger.getLogFiles().containsValue(f)) {
                 Log.d(TAG, "deleting log file (on exit) " + f);
                 f.deleteOnExit();
                 filenames.append(f.getName() + " ");
@@ -1400,19 +835,19 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode==REQUEST_IMPORT_CSV || requestCode==REQUEST_IMPORT_REPLAY_CSV) {
             if (data == null) {
                 Log.w(TAG, getString(R.string.ImportCSVFailedDataIsNull));
-                Toast.makeText(getBaseContext(), getString(R.string.ImportCSVFailedDataIsNull), Toast.LENGTH_LONG);
+                Toast.makeText(getBaseContext(), getString(R.string.ImportCSVFailedDataIsNull), Toast.LENGTH_LONG).show();
             } else {
                 Uri uri = data.getData();
                 if (uri == null) {
                     Log.w(TAG, getString(R.string.ImportCSVFailedCouldNotGetURIFromData));
-                    Toast.makeText(getBaseContext(), getString(R.string.ImportCSVFailedCouldNotGetURIFromData), Toast.LENGTH_LONG);
+                    Toast.makeText(getBaseContext(), getString(R.string.ImportCSVFailedCouldNotGetURIFromData), Toast.LENGTH_LONG).show();
                 } else {
                     File importedRR = importRRFile(uri, getLogsDir());
                     if (requestCode ==REQUEST_IMPORT_REPLAY_CSV) {
                         if (importedRR!=null) {
                             replayRRfile(importedRR);
                         } else {
-                            Toast.makeText(getBaseContext(), getString(R.string.ProblemWithImportedFile)+" " + uri, Toast.LENGTH_LONG);
+                            Toast.makeText(getBaseContext(), getString(R.string.ProblemWithImportedFile)+" " + uri, Toast.LENGTH_LONG).show();
                         }
                     }
                 }
@@ -1835,6 +1270,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        dfaCalculator = new DFACalculator(Integer.parseInt(
+                sharedPreferences.getString(LAMBDA_PREFERENCE_STRING, "500")));
 
         doBindService();
         createUINotificationChannel();
@@ -1862,7 +1299,6 @@ public class MainActivity extends AppCompatActivity {
         // FIXME: Why does the scrollable not start with top visible?
 
         testDFA_alpha1();
-        //testRMSSD_1();
 
         api.setApiLogger(
                 s -> {
@@ -1877,32 +1313,17 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "version: " + PolarBleApiDefaultImpl.versionInfo());
 
-        ttobj = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                Log.d(TAG, "TextToSpeech status " + status);
-                if (status==TextToSpeech.SUCCESS) {
-                    ttobj.setLanguage(Locale.UK);
-                    nonScreenUpdate("Voice output ready");
-                } else {
-                    Log.d(TAG, "TextToSpeech: unable to initialise");
-                }
+        audioFeedback = new AudioFeedbackManager(getApplicationContext(), sharedPreferences);
+        audioFeedback.initialize(() -> audioFeedback.speakImmediate("Voice output ready"));
 
-            }
-        });
+        sessionLogger = new SessionLogger(this);
+        sessionLogger.createLogFile("rr");
+        sessionLogger.writeLogFile(RR_LOGFILE_HEADER, "rr");
+        sessionLogger.writeLogFile("", "rr");
+        sessionLogger.createLogFile("features");
+        sessionLogger.writeLogFile("date,timestamp,elapsedSec,heartrate,rmssd,sdnn,alpha1v1,filtered,samples,droppedPercent,artifactThreshold,alpha1v2", "features");
+        sessionLogger.createLogFile("debug");
 
-        // RRs
-        createLogFile("rr");
-        writeLogFile(RR_LOGFILE_HEADER, "rr");
-        writeLogFile("", "rr");
-        // Features
-        createLogFile("features");
-        writeLogFile("date,timestamp,elapsedSec,heartrate,rmssd,sdnn,alpha1v1,filtered,samples,droppedPercent,artifactThreshold,alpha1v2", "features");
-        // Debug
-        createLogFile("debug");
-        
-        mp = MediaPlayer.create(this, R.raw.artifact);
-        mp.setVolume(100, 100);
 
 
 
@@ -1949,11 +1370,6 @@ public class MainActivity extends AppCompatActivity {
                 if (binding != null) { binding.chipConnectionStatus.setText("Disconnected"); binding.chipConnectionStatus.setChipBackgroundColorResource(android.R.color.transparent); }
                 if (text_view != null) text_view.setText(getString(R.string.DisconnectedFromHeartRateSensor)+" " + polarDeviceInfo.getDeviceId());
                 ecgDisposable = null;
-//                accDisposable = null;
-//                gyrDisposable = null;
-//                magDisposable = null;
-//                ppgDisposable = null;
-//                ppiDisposable = null;
                 searchForPolarDevices();
             }
 
@@ -2093,9 +1509,9 @@ public class MainActivity extends AppCompatActivity {
         if (sharedPreferences.getBoolean(ENABLE_ECG, true)) {
             Log.d(TAG,"logAllEcgData");
             // FIXME: Copied code
-            if (currentLogFileWriters.get("ecg") == null) {
-                createLogFile("ecg");
-                writeLogFile("date,timestamp,elapsed,segmentNr,sampleNr,yV","ecg");
+            if (!sessionLogger.hasWriter("ecg")) {
+                sessionLogger.createLogFile("ecg");
+                sessionLogger.writeLogFile("date,timestamp,elapsed,segmentNr,sampleNr,yV","ecg");
             }
             while (!lastPolarEcgData.isEmpty ()) {
                 PolarEcgData ecgPacket = lastPolarEcgData.remove();
@@ -2109,7 +1525,7 @@ public class MainActivity extends AppCompatActivity {
                 Date d = new Date(firstSampleTimestampMS + ecgElapsedMS);
                 String dateStr = sdf.format(d);
                 int ecgSampleIdx = 0; for (com.polar.sdk.api.model.PolarEcgData.PolarEcgDataSample ecgSampleData : ecgPacket.getSamples()) { int microVolts = ecgSampleData.getVoltage();
-                    writeLogFile(dateStr + "," + ecgPacket.getTimeStamp() +"," +elapsedStr+ ","+ecgSegment+"," + ecgSampleIdx + "," + String.valueOf(microVolts), "ecg");
+                    sessionLogger.writeLogFile(dateStr + "," + ecgPacket.getTimeStamp() +"," +elapsedStr+ ","+ecgSegment+"," + ecgSampleIdx + "," + String.valueOf(microVolts), "ecg");
                     ecgSampleIdx++;
                 }
             }
@@ -2119,13 +1535,13 @@ public class MainActivity extends AppCompatActivity {
         if (sharedPreferences.getBoolean(ENABLE_ECG, true)) {
             Log.d(TAG,"logEcgSegmentEnd");
             // FIXME: Copied code
-            if (currentLogFileWriters.get("ecg") == null) {
-                createLogFile("ecg");
-                writeLogFile("date,timestamp,elapsed,segmentNr,sampleNr,yV","ecg");
+            if (!sessionLogger.hasWriter("ecg")) {
+                sessionLogger.createLogFile("ecg");
+                sessionLogger.writeLogFile("date,timestamp,elapsed,segmentNr,sampleNr,yV","ecg");
             }
             for (int i=0;i<10;i++) {
-                writeLogFile("" + "," + "" + "," + "" + "," + ecgSegment + "," + ecgSample + "," + "1000.0", "ecg");
-                writeLogFile("" + "," + "" + "," + "" + "," + ecgSegment + "," + ecgSample + "," + "-1000.0", "ecg");
+                sessionLogger.writeLogFile("" + "," + "" + "," + "" + "," + ecgSegment + "," + ecgSample + "," + "1000.0", "ecg");
+                sessionLogger.writeLogFile("" + "," + "" + "," + "" + "," + ecgSegment + "," + ecgSample + "," + "-1000.0", "ecg");
             }
         }
     }
@@ -2210,7 +1626,7 @@ public class MainActivity extends AppCompatActivity {
 
     int hrNotificationCount = 0;
     private void updateTrackedFeatures(@NotNull PolarHrData data, long currentVirtualTimeMS, boolean realTime) {
-        wakeLock.acquire();
+        wakeLock.acquire(60 * 1000L); // 60s timeout to prevent stuck wakelocks
         hrNotificationCount++;
         currentTimeMS = currentVirtualTimeMS;
         if (currentTimeMS <= prevTimeMS) {
@@ -2234,6 +1650,7 @@ public class MainActivity extends AppCompatActivity {
         if (timeForUIupdate) {
             String lambdaPref = sharedPreferences.getString(LAMBDA_PREFERENCE_STRING, "500");
             lambdaSetting = Integer.valueOf(lambdaPref);
+            dfaCalculator.setLambda(lambdaSetting);
             //experimental = sharedPreferences.getBoolean(EXPERIMENTAL_PREFERENCE_STRING, false);
             if (sharedPreferences.getBoolean(KEEP_SCREEN_ON_PREFERENCE_STRING, false)) {
                 getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -2255,23 +1672,15 @@ public class MainActivity extends AppCompatActivity {
             } else if (artifactCorrectionThresholdSetting.equals("0.25")) {
                 exerciseMode = getString(R.string.Light);
                 artifactCorrectionThreshold = 0.25;
-            } else if (artifactCorrectionThresholdSetting.equals("0.25")) {
+            } else if (artifactCorrectionThresholdSetting.equals("0.05")) {
                 exerciseMode = getString(R.string.Workout);
                 artifactCorrectionThreshold = 0.05;
-            } else {
-                // ASSERTION FAIL
             }
             boolean removeArtifactsSetting = sharedPreferences.getBoolean("removeArtifacts", true);
             disableArtifactCorrection = !removeArtifactsSetting;
         }
         String notificationDetailSetting = "";
         String alpha1EvalPeriodSetting = "";
-        Set<String> graphFeatures = emptyStringSet;
-        if (realTime) {
-            graphFeatures = sharedPreferences.getStringSet("graphFeaturesSelectorKey", emptyStringSet);
-        } else {
-            graphFeatures = sharedPreferences.getStringSet("graphReplayFeaturesSelectorKey", emptyStringSet);
-        }
         // preference updates
         if (timeForUIupdate) {
             //Log.d(TAG,"timeForUIupdate");
@@ -2298,7 +1707,7 @@ public class MainActivity extends AppCompatActivity {
         long timestamp = currentTimeMS;
         for (int rr : data.getSamples().get(0).getRrsMs()) {
             String msg = "" + timestamp + "," + rr + "," + logRRelapsedMS;
-            writeLogFile(msg, "rr");
+            sessionLogger.writeLogFile(msg, "rr");
             logRRelapsedMS += rr;
             timestamp += rr;
         }
@@ -2399,9 +1808,8 @@ public class MainActivity extends AppCompatActivity {
             ecgSegment++;
             ecgSample = 0;
         }
-        rmssdWindowed = getRMSSD(samples);
-        // TODO: CHECK: avg HR == 60 * 1000 / (mean of observed filtered(?!) RRs)
-        rrMeanWindowed = v_mean(samples);
+        rmssdWindowed = dfaCalculator.getRMSSD(samples);
+        rrMeanWindowed = DFACalculator.vMean(samples);
         //Log.d(TAG,"rrMeanWindowed "+rrMeanWindowed);
         hrMeanWindowed = round(60 * 1000 * 100 / rrMeanWindowed) / 100.0;
         //Log.d(TAG,"hrMeanWindowed "+hrMeanWindowed);
@@ -2422,7 +1830,7 @@ public class MainActivity extends AppCompatActivity {
 //            graphEnabled = true;
             //Log.d(TAG,"alpha1...");
             zonePrev = zone;
-            alpha1V2Windowed = dfaAlpha1V2(samples, 2, 4, 30);
+            alpha1V2Windowed = dfaCalculator.dfaAlpha1V2(samples, 2, 4, 30);
             float a1v2x100 = (int)(100.0 * alpha1V2Windowed);
             alpha1V2RoundedWindowed = round(alpha1V2Windowed * 100) / 100.0;
             if (sharedPreferences.getBoolean(ENABLE_SENSOR_EMULATION, false) && bleService != null) {
@@ -2433,7 +1841,7 @@ public class MainActivity extends AppCompatActivity {
             if (elapsedSecondsTrunc > 120) {
                 String dateStr = sdf.format(new Date(currentTimeMS));
                 //         date,timestamp,elapsedSec,heartrate,rmssd,sdnn,alpha1v1,filtered,samples,droppedPercent,artifactThreshold,alpha1v2", "features");
-                writeLogFile(
+                sessionLogger.writeLogFile(
                                 dateStr
                                 + "," + currentTimeMS
                                 + "," + hrNotificationCount
@@ -2483,9 +1891,8 @@ public class MainActivity extends AppCompatActivity {
         // Device Display
         // if (timeForUIupdate()) {
         if (timeForHRplot) {
-            if (haveArtifacts && sharedPreferences.getBoolean(AUDIO_OUTPUT_ENABLED, false)) {
-                //spokenOutput("drop");
-                mp.start();
+            if (haveArtifacts) {
+                audioFeedback.playArtifactSound();
             }
             StringBuilder logmsg = new StringBuilder();
             if (ecgLogging) {
@@ -2516,7 +1923,7 @@ public class MainActivity extends AppCompatActivity {
             if (text_secondary_label != null) text_secondary_label.setText(R.string.RootMeanSquareSuccessiveDifferencesAbbreviation);
             text_secondary.setText("" + round(rmssdWindowed));
             text_a1.setText("" + alpha1V2RoundedWindowed);
-            text_a1_label.setText(getString(R.string.alpha1) + " [" + a1v2cacheMisses + "]");
+            text_a1_label.setText(getString(R.string.alpha1) + " [" + dfaCalculator.getCacheMisses() + "]");
             // configurable top-of-optimal threshold for alpha1
             double alpha1MaxOptimal = Double.parseDouble(sharedPreferences.getString("alpha1MaxOptimal", "1.0"));
             if (elapsedSecondsTrunc < 20) {
@@ -2553,52 +1960,16 @@ public class MainActivity extends AppCompatActivity {
         }
         elapsedMin = this.elapsedMS / 60000.0;
         double elapsedMinRound = round(this.elapsedMin * 1000) / 1000.0;
-        ///////////////////////elapsedMin = this.elapsedSecondsTrunc / 60.0;
-        //Log.d(TAG,"elapsedSecondsTrunc: "+elapsedSecondsTrunc);
-        //Log.d(TAG,"elapsedMin: "+elapsedMin);
-        double tenSecAsMin = 1.0 / 6.0;
-        boolean pre1 = elapsedMin > (graphViewPortWidth - tenSecAsMin);
-        boolean pre2 = elapsedSecondsTrunc > lastScrollToEndElapsedSec + 20;
-        boolean scrollToEnd = (realTime && pre1 && pre2) || (!realTime && pre1);
-        if (scrollToEnd) lastScrollToEndElapsedSec = elapsedSecondsTrunc;
-        double elapsedMinRoundForRRs = elapsedMinRound;
-        // GraphView RR series removed
-        // DataPoint hrDataPoint = new DataPoint(elapsedMinRound, data.getSamples().get(0).getHr());
-        if (false && timeForHRplot && graphFeatures.contains("hr")) {
-            // hrSeries.appendData(hrDataPoint, scrollToEnd, maxDataPoints);
-        }
-        if (timeForUIupdate) {
-                if (graphFeatures.contains("a1")) {
-//                     a1V2Series.appendData(new DataPoint(elapsedMinRound, alpha1V2RoundedWindowed * 100.0), scrollToEnd, maxDataPoints);
-                }
-                if (graphFeatures.contains("artifacts")) {
-//                     artifactSeries.appendData(new DataPoint(elapsedMinRound, artifactsPercentWindowed / 10.0), scrollToEnd, maxDataPoints);
-                }
-                if (graphFeatures.contains("peakECG")) {
-//                     ecgPeakSeries.appendData(new DataPoint(elapsedMinRound, lastECGpeak / 10.0), scrollToEnd, maxDataPoints);
-                }
-                if (graphFeatures.contains("rmssd")) {
-//                     rmssdSeries.appendData(new DataPoint(elapsedMinRound, round(rmssdWindowed * 2)), scrollToEnd, maxDataPoints);
-                }
-                if (graphFeatures.contains("hrWin")) {
-//                     hrWinSeries.appendData(new DataPoint(elapsedMinRound, hrMeanWindowed), scrollToEnd, maxDataPoints);
-                }
-                if (scrollToEnd) {
-                    double nextX = elapsedMinRound + tenSecAsMin;
-//                     a1HRVvt1Series.appendData(new DataPoint(nextX, 75), scrollToEnd, maxDataPoints);
-//                     a1HRVvt2Series.appendData(new DataPoint(nextX, 50), scrollToEnd, maxDataPoints);
-//                     a125Series.appendData(new DataPoint(nextX, 25), scrollToEnd, maxDataPoints);
-//                     a1125Series.appendData(new DataPoint(nextX, 125), scrollToEnd, maxDataPoints);
-//                     a1175Series.appendData(new DataPoint(nextX, 175), scrollToEnd, maxDataPoints);
-                }
-        }
         chartHelper.addDataPoint((float)elapsedMinRound, data.getSamples().get(0).getHr(),
                 (float)(alpha1V2RoundedWindowed * 100.0),
                 (float)round(rmssdWindowed),
                 data.getSamples().get(0).getRrsMs().isEmpty() ? 0 : data.getSamples().get(0).getRrsMs().get(data.getSamples().get(0).getRrsMs().size()-1),
                 artifactsPercentWindowed);
 
-        audioUpdate(data, currentTimeMS);
+        audioFeedback.update(new AudioFeedbackManager.TrainingState(
+                alpha1V2RoundedWindowed, data.getSamples().get(0).getHr(),
+                (int) round(rmssdWindowed), artifactsPercentWindowed,
+                elapsedSecondsTrunc, zone, zonePrev), currentTimeMS);
 
         starting = false;
         wakeLock.release();
@@ -2687,157 +2058,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void writeLogFile(String msg, String tag) {
-        //android.util.Log.d(TAG,"writeLogFile "+tag);
-        FileWriter logStream = currentLogFileWriters.get(tag);
-        try {
-            if (logStream!=null) {
-                logStream.append(msg + "\n");
-                logStream.flush();
-            } else {
-                android.util.Log.e(TAG, "ERROR: "+tag+" logStream is null");
-            }
-        } catch (IOException e) {
-            // avoid infinite loop through the local Log mechanism!
-            android.util.Log.d(TAG,"IOException writing to "+tag+" log "+getStackTraceString(e));
-            if (text_view != null) text_view.setText("IOException writing to "+tag+" log");
-        }
-    }
-
-    @NotNull
-    private String makeLogfileName(String stem, String type) {
-        String dateString = getDate(System.currentTimeMillis(), "yyyyMMdd_HHmmss");
-        String extension = type.equals("debug") ? "log" : "csv";
-        return "/ftmxr_"+dateString+"_"+stem+"."+type+"."+extension;
-    }
-
-    Map<String,File> currentLogFiles = new HashMap<String,File>();
-    Map<String,FileWriter> currentLogFileWriters = new HashMap<String,FileWriter>();
-
-    private boolean createLogFile(File dir, String tag) {
-        try {
-            File logFile = new File(dir, makeLogfileName("",tag));
-            FileWriter logStream = new FileWriter(logFile);
-            Log.d(TAG,"Logging "+tag+" to "+logFile.getAbsolutePath());
-            currentLogFiles.put(tag,logFile);
-            currentLogFileWriters.put(tag,logStream);
-            Log.d(TAG,"created Logfile: "+tag+" "+logFile.getAbsolutePath());
-            logsDir = dir;
-            return true;
-        } catch (FileNotFoundException e) {
-            logException("File not found ",e);
-        } catch (IOException e) {
-            logException("createLogFile ",e);
-        }
-        return false;
-    }
-
-    private void createLogFile(String tag) {
-        android.util.Log.d(TAG,"createLogFile: "+tag);
-        // try external first
-        if (!createLogFile(getExtLogsDir(), tag))
-            // fall back to internal
-            createLogFile(getIntLogsDir(), tag);
-    }
-
-    @NotNull
-    private File getIntLogsDir() {
-        File privateRootDir = getFilesDir();
-        privateRootDir.mkdir();
-        File logsDir = new File(privateRootDir, "logs");
-        logsDir.mkdir();
-        return logsDir;
-    }
-
-    @NotNull
     private File getLogsDir() {
-        return logsDir;
+        return sessionLogger.getLogsDir();
     }
 
-    @NotNull
-    private File getExtLogsDir() {
-        File rootDir = this.getExternalFilesDir(null);
-        rootDir.mkdir();
-        File logsDir = new File(rootDir, "logs");
-        logsDir.mkdir();
-        return logsDir;
-    }
 
-    private double getRMSSD(double[] samples) {
-        double[] NNdiff = v_abs(v_differential(samples));
-        //rmssd = round(np.sqrt(np.sum((NNdiff * NNdiff) / len(NNdiff))), 2)
-        double rmssd = sqrt(v_sum(v_power_s2(NNdiff,2)) / NNdiff.length);
-        return round(rmssd * 100) / 100.0;
-    }
-
-    // pre: no artifacts(?)
-    private void testRMSSD_1() {
-        Log.d(TAG,"testRMSSD_1 ...");
-        double result = getRMSSD(samples1);
-        Log.d(TAG,"testRMSSD_1 done");
-    }
-
-    // determine whether to update, and what content, to provide via audio/notification
-    private void audioUpdate(@NotNull PolarHrData data, long currentTime_ms){
-            long timeSinceLastSpokenUpdate_s = (long) (currentTime_ms - prevSpokenUpdateMS) / 1000;
-            //long timeSinceLastSpokenArtifactsUpdate_s = (long) (currentTime_ms - prevSpokenArtifactsUpdateMS) / 1000;
-
-            double a1 = alpha1V2RoundedWindowed;
-            int rmssd = (int) round(rmssdWindowed);
-            int minUpdateWaitSeconds = Integer.parseInt(sharedPreferences.getString("minUpdateWaitSeconds", "15"));
-            int maxUpdateWaitSeconds = Integer.parseInt(sharedPreferences.getString("maxUpdateWaitSeconds", "60"));
-            // something like your MAF --- close to your max training HR
-            int upperOptimalHRthreshold = Integer.parseInt(sharedPreferences.getString("upperOptimalHRthreshold", "130"));
-            int upperRestingHRthreshold = Integer.parseInt(sharedPreferences.getString("upperRestingHRthreshold", "90"));
-            double artifactsRateAlarmThreshold = Double.parseDouble(sharedPreferences.getString("artifactsRateAlarmThreshold", "5"));
-            double upperOptimalAlpha1Threshold = Double.parseDouble(sharedPreferences.getString("upperOptimalAlpha1Threshold", "1.0"));
-            double lowerOptimalAlpha1Threshold = Double.parseDouble(sharedPreferences.getString("upperOptimalAlpha1Threshold", "0.85"));
-            boolean audioOutputOnZoneChange = sharedPreferences.getBoolean("audioOutputOnZoneChane", false);
-            String artifactsUpdate = "";
-            String featuresUpdate = "";
-        // this will clobber the standard behavior(?)
-        if (audioOutputOnZoneChange) {
-            if (zone != zonePrev){
-                featuresUpdate = alpha1V2RoundedWindowed + " " + data.getSamples().get(0).getHr();
-                artifactsUpdate = getString(R.string.Dropped_TextToSpeech) + " " + artifactsPercentWindowed + " " + getString(R.string.Percent_TextToSpeech);
-            }
-        }
-        else if (elapsedSecondsTrunc >30 && timeSinceLastSpokenUpdate_s > minUpdateWaitSeconds) {
-                if (artifactsPercentWindowed > 0) {
-                    artifactsUpdate = getString(R.string.Dropped_TextToSpeech)+" " + artifactsPercentWindowed + " "+getString(R.string.Percent_TextToSpeech);
-                }
-                // lower end of optimal alph1 - close to overtraining - frequent updates, prioritise a1, abbreviated
-                if (data.getSamples().get(0).getHr() > upperOptimalHRthreshold || a1 < lowerOptimalAlpha1Threshold) {
-                    featuresUpdate = alpha1V2RoundedWindowed + " " + data.getSamples().get(0).getHr();
-                // higher end of optimal - prioritise a1, close to undertraining?
-                } else if ((data.getSamples().get(0).getHr() > (upperOptimalHRthreshold - 10) || alpha1V2RoundedWindowed < upperOptimalAlpha1Threshold)) {
-                    featuresUpdate =  getString(R.string.AlphaOne_TextToSpeech)+", " + alpha1V2RoundedWindowed + " "+getString(R.string.HeartRate_TextToSpeech)+" " + data.getSamples().get(0).getHr();
-                // lower end of optimal - prioritise a1
-                } else if (artifactsPercentWindowed > artifactsRateAlarmThreshold ||
-                    data.getSamples().get(0).getHr() > upperRestingHRthreshold && timeSinceLastSpokenUpdate_s >= maxUpdateWaitSeconds) {
-                    featuresUpdate = getString(R.string.AlphaOne_TextToSpeech)+" " + alpha1V2RoundedWindowed + " "+getString(R.string.HeartRate_TextToSpeechFull)+" "+ data.getSamples().get(0).getHr();
-                // warm up / cool down --- low priority, update RMSSD instead of alpha1
-                } else if (artifactsPercentWindowed > artifactsRateAlarmThreshold ||
-                        timeSinceLastSpokenUpdate_s >= maxUpdateWaitSeconds) {
-                    featuresUpdate = getString(R.string.HeartRateFull_TextToSpeech)+" " + data.getSamples().get(0).getHr() + ". "+getString(R.string.HeartRateVariabilityAbbrev_TextToSpeech)+" " + rmssd;
-                }
-            }
-            if (featuresUpdate.length() > 0) {
-                prevSpokenUpdateMS = currentTime_ms;
-                if (artifactsPercentWindowed > artifactsRateAlarmThreshold) {
-                    nonScreenUpdate(artifactsUpdate + " " + featuresUpdate);
-                } else {
-                    nonScreenUpdate(featuresUpdate + ", " + artifactsUpdate);
-                }
-            }
-    }
-
-    // Update the user via audio / notification, if enabled
-    private void nonScreenUpdate(String update) {
-            if (sharedPreferences.getBoolean(AUDIO_OUTPUT_ENABLED, false)) {
-                ttobj.speak(update, TextToSpeech.QUEUE_FLUSH, null);
-            }
-    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
