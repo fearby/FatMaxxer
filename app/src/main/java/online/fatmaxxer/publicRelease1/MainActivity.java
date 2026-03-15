@@ -1262,6 +1262,7 @@ public class MainActivity extends AppCompatActivity {
                     try { api.disconnectFromDevice(SENSOR_ID); } catch (Exception e) { /* ignore */ }
                     SENSOR_ID = "";
                     binding.chipConnectionStatus.setText("Disconnected");
+                    updateFabState(false);
                 } else {
                     searchForPolarDevices();
                     tryPolarConnectToPreferredDevice();
@@ -1356,6 +1357,7 @@ public class MainActivity extends AppCompatActivity {
                 if (binding != null) { binding.chipConnectionStatus.setText("Connected: " + SENSOR_ID); binding.chipConnectionStatus.setChipBackgroundColorResource(R.color.colorFatMaxIntensity); }
                 Toast.makeText(getBaseContext(), getString(R.string.ConnectedToDevice)+" " + SENSOR_ID, Toast.LENGTH_SHORT).show();
                 ensurePreferenceSet(POLAR_DEVICE_ID_PREFERENCE_STRING,polarDeviceInfo.getDeviceId());
+                updateFabState(true);
             }
 
             @Override
@@ -1368,6 +1370,7 @@ public class MainActivity extends AppCompatActivity {
             public void deviceDisconnected(@NonNull PolarDeviceInfo polarDeviceInfo) {
                 Log.d(TAG, "DISCONNECTED: " + polarDeviceInfo.getDeviceId());
                 if (binding != null) { binding.chipConnectionStatus.setText("Disconnected"); binding.chipConnectionStatus.setChipBackgroundColorResource(android.R.color.transparent); }
+                updateFabState(false);
                 if (text_view != null) text_view.setText(getString(R.string.DisconnectedFromHeartRateSensor)+" " + polarDeviceInfo.getDeviceId());
                 ecgDisposable = null;
                 searchForPolarDevices();
@@ -2001,6 +2004,21 @@ public class MainActivity extends AppCompatActivity {
 
     private int getFatMaxxerColor(int p) {
         return ContextCompat.getColor(this, p);
+    }
+
+    private void updateFabState(boolean connected) {
+        if (binding == null || binding.fabConnect == null) return;
+        if (connected) {
+            binding.fabConnect.setText("Disconnect");
+            binding.fabConnect.setIconResource(android.R.drawable.stat_sys_data_bluetooth);
+            binding.fabConnect.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    getFatMaxxerColor(R.color.colorMedIntensity)));
+        } else {
+            binding.fabConnect.setText("Connect");
+            binding.fabConnect.setIconResource(android.R.drawable.stat_sys_data_bluetooth);
+            binding.fabConnect.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.parseColor("#00E676")));
+        }
     }
 
     private boolean timeForHRplot(boolean realTime) {

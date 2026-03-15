@@ -309,14 +309,16 @@
         android:layout_gravity="bottom"
         android:backgroundTint="@color/colorPrimaryDark" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabConnect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:contentDescription="Connect"
-        android:src="@android:drawable/ic_menu_add"
+        android:contentDescription="Connect to heart rate sensor"
+        android:text="Connect"
+        app:icon="@android:drawable/stat_sys_data_bluetooth"
         app:backgroundTint="#00E676"
-        app:tint="@color/colorPrimaryDark"
+        app:iconTint="@color/colorPrimaryDark"
+        android:textColor="@color/colorPrimaryDark"
         app:layout_anchor="@id/bottomAppBar" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
